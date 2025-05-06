@@ -6,7 +6,7 @@ db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/martinenke/Movie_Web_App/Movie_Web_app/movie_web.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/martinenke/Movie_Web_App/movie_web.db'
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
