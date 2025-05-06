@@ -3,25 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users - MovieWeb App</title>
+    <title>Add Movie</title>
 </head>
 <body>
-    <h1>Add Movie</h1>
+
+    <h1>Add New Movie</h1>
+
+    {% if movie_details %}
+        {% if movie_details.error %}
+            <p style="color: red;">{{ movie_details.error }}</p>
+        {% else %}
+            <h3>Movie Details:</h3>
+            <p><strong>Title:</strong> {{ movie_details['title'] }}</p>
+            <p><strong>Director:</strong> {{ movie_details['director'] }}</p>
+            <p><strong>Year:</strong> {{ movie_details['year'] }}</p>
+            <p><strong>Rating:</strong> {{ movie_details['rating'] }}</p>
+            <img src="{{ movie_details['poster'] }}" alt="Movie Poster" style="width: 200px;">
+        {% endif %}
+    {% endif %}
+
     <form method="POST">
-    <label for="name">Movie Name:</label>
-    <input type="text" name="name" id="name" required>
+    <label for="name">Movie Title:</label>
+    <input type="text" name="name" id="name" value="{{ request.form['name'] if request.form else '' }}" required>
 
-    <label for="director">Director:</label>
-    <input type="text" name="director" id="director">
+    <label for="director">Director (Optional):</label>
+    <input type="text" name="director" id="director" value="{{ movie_details['director'] if movie_details and movie_details.get('director') else '' }}">
 
-    <label for="year">Year:</label>
-    <input type="text" name="year" id="year">
+    <label for="year">Year (Optional):</label>
+    <input type="text" name="year" id="year" value="{{ movie_details['year'] if movie_details and movie_details.get('year') else '' }}">
 
-    <label for="rating">Rating:</label>
-    <input type="text" name="rating" id="rating">
+    <label for="rating">Rating (Optional):</label>
+    <input type="text" name="rating" id="rating" value="{{ movie_details['rating'] if movie_details and movie_details.get('rating') else '' }}">
+
+    <!-- Display poster if fetched from OMDb -->
+    <label for="poster">Poster (Fetched from OMDb):</label>
+    <input type="text" name="poster" id="poster" value="{{ movie_details['poster'] if movie_details and movie_details.get('poster') else '' }}">
 
     <button type="submit">Add Movie</button>
 </form>
+
+
+    <br>
+    <a href="{{ url_for('user_movies', user_id=user_id) }}">Back to {{ user_id }}'s Movies</a>
 
 </body>
 </html>

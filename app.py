@@ -3,6 +3,7 @@ from Movie_Web_App import create_app, db, data_manager  # Import the factory and
 from Movie_Web_App.data_manager.models import User, Movie
 from Movie_Web_App.data_manager.sqlite_data_manager import SQLiteDataManager
 import requests
+from Movie_Web_App.omdb_api import fetch_movie_data  # Import your custom OMDb module
 
 # Create the Flask app using the factory
 app = create_app()
@@ -50,29 +51,45 @@ def user_movies(user_id):
 
 @app.route('/users/<int:user_id>/add_movie', methods=['GET', 'POST'])
 def add_movie(user_id):
+    movie_details = None  # Default value for movie details
+
     if request.method == 'POST':
-        # Get movie details from the form
+        # Get the movie title from the form
         name = request.form['name']
         director = request.form['director']
         year = request.form['year']
         rating = request.form['rating']
+        # Ensure 'poster' is handled properly even if it's missing in the form
+        poster = request.form.get('poster', '')  # Default to an empty string if 'poster' is missing
 
-        # Optionally, you can fetch movie details from OMDb API (if needed)
-        omdb_url = f"http://www.omdbapi.com/?t={name}&apikey=your_api_key"
-        omdb_response = requests.get(omdb_url)
-        movie_data = omdb_response.json()
+        # If the name is provided, fetch movie data from OMDb API
+        if name:
+            # Fetch movie data from OMDb using the custom function
+            movie_data = fetch_movie_data(name)
 
-        # Use the OMDb data to populate the movie fields (e.g., year, rating)
-        year = movie_data.get('Year', year)
-        rating = movie_data.get('imdbRating', rating)
+            if movie_data:  # If data was fetched from OMDb
+                # Fill missing data with OMDb API response
+                year = movie_data['year']
+                rating = movie_data['rating']
+                poster = movie_data['poster']  # Use the poster from OMDb response
 
-        # Add movie to the database
-        data_manager.add_movie(name, director, year, rating, user_id)
+                # Handle missing or unavailable director information
+                director = movie_data['director'] if movie_data['director'] != "N/A" else director
+
+            else:
+                # Handle the case where the movie was not found in OMDb
+                movie_details = {"error": "Movie not found in OMDb database"}
+
+        # Add the movie to the database (poster is now used correctly)
+        new_movie = Movie(name=name, director=director, year=year, rating=rating, user_id=user_id, poster=poster)
+        db.session.add(new_movie)
+        db.session.commit()
 
         # Redirect to the user's movie list
         return redirect(url_for('user_movies', user_id=user_id))
 
-    return render_template('add_movie.html', user_id=user_id)
+    return render_template('add_movie.html', user_id=user_id, movie_details=movie_details)
+
 
 
 @app.route('/users/<int:user_id>/update_movie/<int:movie_id>', methods=['GET', 'POST'])
@@ -107,8 +124,8 @@ def delete_movie(user_id, movie_id):
 
 if __name__ == '__main__':
     # Create tables
-    #with app.app_context():
-        # db.drop_all()  # Drops all tables in the database
-        # db.create_all()  # Creates the tables again based on models
-        # print("Tables created successfully!")
+    # with app.app_context():
+    #     db.drop_all()  # Drops all tables in the database
+    #     db.create_all()  # Creates the tables again based on models
+    #     print("Tables created successfully!")
     app.run(port=5030, debug=True)
