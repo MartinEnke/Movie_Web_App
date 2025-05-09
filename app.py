@@ -5,6 +5,7 @@ from Movie_Web_App.data_manager.sqlite_data_manager import SQLiteDataManager
 import requests
 from Movie_Web_App.omdb_api import fetch_movie_data  # Import your custom OMDb module
 import os
+from sqlalchemy.exc import SQLAlchemyError
 
 # Create the Flask app using the factory
 app = create_app()
@@ -122,32 +123,69 @@ def add_movie(user_id):
     return render_template('add_movie.html', user_id=user_id)
 
 
-@app.route('/users/<int:user_id>/update_movie/<int:movie_id>', methods=['GET', 'POST'])
+@app.route('/users/<int:user_id>/update_movie/<int:movie_id>', methods=['GET','POST'])
 def update_movie(user_id, movie_id):
-    movie = Movie.query.get_or_404(movie_id)  # Get the movie by ID
-    user = User.query.get_or_404(user_id)  # Get the user by ID
+    # Fetch or 404
+    movie = Movie.query.get_or_404(movie_id)
+    user  = User.query.get_or_404(user_id)
 
     if request.method == 'POST':
-        # Get the updated movie details from the form
-        movie.name = request.form['name']
-        movie.director = request.form['director']
-        movie.year = request.form['year']
-        movie.rating = request.form['rating']
+        # 1) Get and validate form data
+        name = request.form.get('name','').strip()
+        if not name:
+            flash("Movie title cannot be empty.", "warning")
+            return render_template('update_movie.html', user=user, movie=movie)
 
-        # Commit changes to the database
-        db.session.commit()
+        # Optional fields with fallback to existing values
+        director = request.form.get('director','').strip() or movie.director
+        year_str = request.form.get('year','').strip()
+        rating_str = request.form.get('rating','').strip()
 
-        # Redirect to the user's movie list
-        return redirect(url_for('user_movies', user_id=user_id))
+        # 2) Cast year and rating, handling errors
+        try:
+            year   = int(year_str)   if year_str   else movie.year
+            rating = float(rating_str) if rating_str else movie.rating
+        except ValueError:
+            flash("Year must be an integer and rating a number.", "error")
+            return render_template('update_movie.html', user=user, movie=movie)
 
+        # 3) Apply changes to the model
+        movie.name     = name
+        movie.director = director
+        movie.year     = year
+        movie.rating   = rating
+
+        # 4) Try committing, rollback on failure
+        try:
+            db.session.commit()
+            flash(f"“{movie.name}” has been updated.", "success")
+            return redirect(url_for('user_movies', user_id=user_id))
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Database error updating movie")
+            flash("An internal error occurred. Please try again.", "error")
+            return render_template('update_movie.html', user=user, movie=movie)
+
+    # GET: render the form
     return render_template('update_movie.html', user=user, movie=movie)
 
 
-@app.route('/users/<int:user_id>/delete_movie/<int:movie_id>', methods=['GET', 'POST'])
+@app.route('/users/<int:user_id>/delete_movie/<int:movie_id>',methods=['POST'])  # <-- only POST)
 def delete_movie(user_id, movie_id):
-    movie = Movie.query.get_or_404(movie_id)  # Get the movie by ID
-    db.session.delete(movie)  # Delete the movie
-    db.session.commit()  # Commit the deletion to the database
+    # Ensure both user and movie exist, and movie belongs to that user
+    movie = Movie.query.get_or_404(movie_id)
+    user  = User.query.get_or_404(user_id)
+    if movie.user_id != user.id:
+        abort(404)
+
+    try:
+        db.session.delete(movie)
+        db.session.commit()
+        flash(f"Deleted “{movie.name}” successfully.", "success")
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("Error deleting movie")
+        flash("Could not delete the movie. Please try again.", "error")
 
     return redirect(url_for('user_movies', user_id=user_id))
 
