@@ -1,0 +1,55 @@
+SECRET KEY:
+
+1. Generate the key
+openssl rand -hex 32 > secret_key.txt
+This writes your 64-char hex string into secret_key.txt.
+
+2. Copy it into your .env
+Open .env (in your project root) and add:
+SECRET_KEY=<paste-the-hex-string-from-secret_key.txt>
+(You only need to do this once.)
+Delete or hide secret_key.txt from your project to not get uploaded again.
+
+3. Ensure python-dotenv is installed
+pip install python-dotenv
+Flask’s CLI will automatically load your .env when you run flask run or python -m flask.
+
+In your code (e.g. at the top of app.py or in create_app()):
+import os
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+Restart your server with flask run (no manual export needed)—now SECRET_KEY comes from .env.
+
+
+Why this matters
+
+The SECRET_KEY is used to cryptographically sign the session cookie so that Flask can trust its contents.
+
+It’s also what powers flash() under the hood.
+
+You only hit that “no secret key” error now because you started
+using flash() (and by extension the session) in your routes and error handlers.
+Flask’s flashing system stores messages in the user’s session cookie,
+and signing that cookie securely requires a SECRET_KEY. Before you called flash(),
+you hadn’t touched the session at all, so Flask never needed to sign or load it and never complained.
+
+
+Once you do:
+flash("Something happened", "info")
+Flask has to put that message into session['_flashes'], which in turn means it needs
+your app’s secret key to cryptographically sign (and later verify) the session cookie.
+Without app.config['SECRET_KEY'], the session is simply unavailable, hence the runtime error.
+
+Quick recap
+No flash() or session usage → No secret key needed.
+Introduce flash() (or any session[...] access) → Flask must sign cookies → you must set SECRET_KEY.
+So as soon as you decided to give your users feedback with flash(), you needed to configure app.config['SECRET_KEY'].
+
+
+Tip for production
+
+Generate a secure random key once (e.g. openssl rand -hex 32), set it in your environment (export SECRET_KEY=…),
+and never check it into source control.
+
+
+
+

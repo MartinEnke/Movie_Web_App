@@ -1,14 +1,30 @@
-from flask import render_template, request, redirect, url_for
+from flask import render_template, request, redirect, url_for, abort, flash, current_app
 from Movie_Web_App import create_app, db, data_manager  # Import the factory and db object
 from Movie_Web_App.data_manager.models import User, Movie
 from Movie_Web_App.data_manager.sqlite_data_manager import SQLiteDataManager
 import requests
 from Movie_Web_App.omdb_api import fetch_movie_data  # Import your custom OMDb module
+import os
 
 # Create the Flask app using the factory
 app = create_app()
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+
 # initializing the data_manager
 data_manager = SQLiteDataManager(db)
+
+
+# error routes
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    # optional: roll back DB session if you’re using SQLAlchemy
+    db.session.rollback()
+    return render_template('500.html'), 500
 
 
 # Define routes
@@ -31,6 +47,8 @@ def add_user():
     if request.method == 'POST':
         # Get the name from the form
         name = request.form['name']
+        if len(name) < 3:
+            return "Name too short", 400
 
         # Add the new user using the DataManager
         data_manager.add_user(name)
@@ -44,52 +62,64 @@ def add_user():
 def user_movies(user_id):
     # Fetch the user and their movies
     user = User.query.get_or_404(user_id)  # Get the user by ID, or return 404 if not found
+    if user is None:
+        abort(404)
     movies = data_manager.get_user_movies(user_id)  # Use the DataManager to get user's movies
 
     return render_template('user_movies.html', user=user, movies=movies)
 
 
-@app.route('/users/<int:user_id>/add_movie', methods=['GET', 'POST'])
+@app.route('/users/<int:user_id>/add_movie', methods=['GET','POST'])
 def add_movie(user_id):
-    movie_details = None  # Default value for movie details
-
     if request.method == 'POST':
-        # Get the movie title from the form
-        name = request.form['name']
-        director = request.form['director']
-        year = request.form['year']
-        rating = request.form['rating']
-        # Ensure 'poster' is handled properly even if it's missing in the form
-        poster = request.form.get('poster', '')  # Default to an empty string if 'poster' is missing
+        title = request.form.get('name','').strip()
+        if not title:
+            flash("Please enter a movie title.", "warning")
+            return render_template('add_movie.html', user_id=user_id)
 
-        # If the name is provided, fetch movie data from OMDb API
-        if name:
-            # Fetch movie data from OMDb using the custom function
-            movie_data = fetch_movie_data(name)
+        # 1) Fetch from OMDb
+        try:
+            movie_data = fetch_movie_data(title)
+        except Exception:
+            current_app.logger.exception("OMDb lookup failed")
+            flash("Could not reach OMDb. Try again later.", "error")
+            return render_template('add_movie.html', user_id=user_id)
 
-            if movie_data:  # If data was fetched from OMDb
-                # Fill missing data with OMDb API response
-                year = movie_data['year']
-                rating = movie_data['rating']
-                poster = movie_data['poster']  # Use the poster from OMDb response
+        if not movie_data:
+            flash("Movie not found in OMDb.", "warning")
+            return render_template('add_movie.html', user_id=user_id)
 
-                # Handle missing or unavailable director information
-                director = movie_data['director'] if movie_data['director'] != "N/A" else director
+        # 2) Build the Movie using fetched data (fall back to form fields only if OMDb field is missing)
+        director = (movie_data['director']
+                    if movie_data['director'] != "N/A"
+                    else request.form.get('director','').strip())
+        year    = movie_data.get('year')   or request.form.get('year','').strip()
+        rating  = movie_data.get('rating') or request.form.get('rating','').strip()
+        poster  = movie_data.get('poster') or request.form.get('poster','').strip()
 
-            else:
-                # Handle the case where the movie was not found in OMDb
-                movie_details = {"error": "Movie not found in OMDb database"}
+        new_movie = Movie(
+            name=title,
+            director=director,
+            year=year,
+            rating=rating,
+            poster=poster,
+            user_id=user_id
+        )
 
-        # Add the movie to the database (poster is now used correctly)
-        new_movie = Movie(name=name, director=director, year=year, rating=rating, user_id=user_id, poster=poster)
-        db.session.add(new_movie)
-        db.session.commit()
+        # 3) Commit & redirect
+        try:
+            db.session.add(new_movie)
+            db.session.commit()
+            flash(f"“{title}” added to your list!", "success")
+            return redirect(url_for('user_movies', user_id=user_id))
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Database error adding movie")
+            flash("Error saving movie. Please try again.", "error")
+            return render_template('add_movie.html', user_id=user_id)
 
-        # Redirect to the user's movie list
-        return redirect(url_for('user_movies', user_id=user_id))
-
-    return render_template('add_movie.html', user_id=user_id, movie_details=movie_details)
-
+    # GET
+    return render_template('add_movie.html', user_id=user_id)
 
 
 @app.route('/users/<int:user_id>/update_movie/<int:movie_id>', methods=['GET', 'POST'])
