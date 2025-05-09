@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie Web App Index</title>
+</head>
+<body>
+  <h1>Movie Web App – Index</h1>
+  <ul>
+    <li><a href="{{ url_for('home') }}">Home</a></li>
+    <li><a href="{{ url_for('list_users') }}">List All Users</a></li>
+    <li><a href="{{ url_for('add_user') }}">Add a New User</a></li>
+    <li><a href="{{ url_for('index') }}">Index Page (this page)</a></li>
+  </ul>
+
+  <h2>User-Specific Routes</h2>
+  <p>Replace <code>USER_ID</code> and <code>MOVIE_ID</code> with real IDs:</p>
+  <ul>
+    <li><a href="/users/USER_ID">View Movies for a User</a></li>
+    <li><a href="/users/USER_ID/add_movie">Add a Movie for a User</a></li>
+    <li><a href="/users/USER_ID/update_movie/MOVIE_ID">Update a Movie</a></li>
+    <li><a href="/users/USER_ID/delete_movie/MOVIE_ID">Delete a Movie</a></li>
+  </ul>
+</body>
+</html>
