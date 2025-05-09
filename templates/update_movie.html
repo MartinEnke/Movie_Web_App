@@ -1,37 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Movie</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Update Movie</title>
 </head>
 <body>
 
-    <h1>Update Movie</h1>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flashes">
+        {% for category, msg in messages %}
+          <li class="{{ category }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
 
-    <form method="POST">
-        <label for="name">Movie Name:</label>
-        <input type="text" name="name" id="name" value="{{ movie.name }}" required>
+  <h1>Update {{ movie.name }}</h1>
+  <form action="{{ url_for('main.update_movie', user_id=user.id, movie_id=movie.id) }}"
+        method="post">
+    <label for="name">Title*:</label><br>
+    <input type="text" id="name" name="name" value="{{ movie.name }}" required><br><br>
 
-        <label for="director">Director:</label>
-        <input type="text" name="director" id="director" value="{{ movie.director }}">
+    <label for="director">Director:</label><br>
+    <input type="text" id="director" name="director" value="{{ movie.director }}"><br><br>
 
-        <label for="year">Year:</label>
-        <input type="text" name="year" id="year" value="{{ movie.year }}">
+    <label for="year">Year:</label><br>
+    <input type="text" id="year" name="year" value="{{ movie.year }}"><br><br>
 
-        <label for="rating">Rating:</label>
-        <input type="text" name="rating" id="rating" value="{{ movie.rating }}">
+    <label for="rating">Rating:</label><br>
+    <input type="text" id="rating" name="rating" value="{{ movie.rating }}"><br><br>
 
-        <button type="submit">Update Movie</button>
-    </form>
+    <button type="submit">Save Changes</button>
+  </form>
 
-    <!-- Back to User's Movies Link -->
-    <br>
-    <a href="{{ url_for('user_movies', user_id=user.id) }}">Back to {{ user.name }}'s Movies</a>
-
-    <br>
-    <a href="{{ url_for('list_users') }}">Back to Users List</a>
+  <p>
+    <a href="{{ url_for('main.user_movies', user_id=user.id) }}">← Back to Movies</a><br>
+    <a href="{{ url_for('main.index') }}">← Back to Index</a>
+  </p>
 
 </body>
 </html>

@@ -2,65 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Add Movie</title>
 </head>
 <body>
 
-  <h1>Add New Movie</h1>
-
-  <!-- FLASH MESSAGES -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <ul class="flashes">
-        {% for category, message in messages %}
-          <li class="flash {{ category }}">{{ message }}</li>
+        {% for category, msg in messages %}
+          <li class="{{ category }}">{{ msg }}</li>
         {% endfor %}
       </ul>
     {% endif %}
   {% endwith %}
 
-  <!-- SHOW PREVIEW OR ERRORS FROM OMDb -->
-  {% if movie_details %}
-    {% if movie_details.error %}
-      <p style="color: red;">{{ movie_details.error }}</p>
-    {% else %}
-      <h3>Movie Details:</h3>
-      <p><strong>Title:</strong> {{ movie_details.title }}</p>
-      <p><strong>Director:</strong> {{ movie_details.director }}</p>
-      <p><strong>Year:</strong> {{ movie_details.year }}</p>
-      <p><strong>Rating:</strong> {{ movie_details.rating }}</p>
-      <img src="{{ movie_details.poster }}" alt="Movie Poster" style="width: 200px;">
-    {% endif %}
-  {% endif %}
+  <h1>Add New Movie</h1>
+  <form action="{{ url_for('main.add_movie', user_id=user_id) }}" method="post">
+    <label for="name">Movie Title*:</label><br>
+    <input type="text" id="name" name="name" required><br><br>
 
-  <form method="POST">
-    <label for="name">Movie Title:</label>
-    <input type="text" name="name" id="name"
-           value="{{ request.form.name or '' }}" required>
+    <label for="director">Director (optional):</label><br>
+    <input type="text" id="director" name="director"><br><br>
 
-    <label for="director">Director (Optional):</label>
-    <input type="text" name="director" id="director"
-           value="{{ movie_details.director if movie_details else '' }}">
+    <label for="year">Year (optional):</label><br>
+    <input type="text" id="year" name="year"><br><br>
 
-    <label for="year">Year (Optional):</label>
-    <input type="text" name="year" id="year"
-           value="{{ movie_details.year if movie_details else '' }}">
+    <label for="rating">Rating (optional):</label><br>
+    <input type="text" id="rating" name="rating"><br><br>
 
-    <label for="rating">Rating (Optional):</label>
-    <input type="text" name="rating" id="rating"
-           value="{{ movie_details.rating if movie_details else '' }}">
-
-    <label for="poster">Poster URL (Fetched from OMDb):</label>
-    <input type="text" name="poster" id="poster"
-           value="{{ movie_details.poster if movie_details else '' }}">
+    <label for="poster">Poster URL (optional):</label><br>
+    <input type="text" id="poster" name="poster"><br><br>
 
     <button type="submit">Add Movie</button>
   </form>
 
-  <br>
-  <a href="{{ url_for('user_movies', user_id=user_id) }}">Back to {{ user_id }}'s Movies</a>
+  <p>
+    <a href="{{ url_for('main.user_movies', user_id=user_id) }}">← Back to Movies</a><br>
+    <a href="{{ url_for('main.index') }}">← Back to Index</a>
+  </p>
 
 </body>
 </html>
-

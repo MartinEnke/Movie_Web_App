@@ -1,62 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ user.name }}'s Movies</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ user.name }}’s Movies</title>
 </head>
 <body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <ul class="flashes">
-            {% for cat,msg in messages %}
-              <li class="{{ cat }}">{{ msg }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      {% endwith %}
 
-    <h1>{{ user.name }}'s Favorite Movies</h1>
-
-    {% if movies %}
-        <ul>
-            {% for movie in movies %}
-                <li style="margin-bottom: 1.5rem;">
-                    {% if movie.poster and movie.poster != 'N/A' %}
-                        <img
-                          src="{{ movie.poster }}"
-                          alt="Poster for {{ movie.name }}"
-                          style="max-width:200px; display:block; margin-bottom:0.5rem;"
-                        >
-                    {% else %}
-                        <p><em>No poster available</em></p>
-                    {% endif %}
-
-                    <strong>{{ movie.name }}</strong> ({{ movie.year }}) - Rated: {{ movie.rating }}<br>
-                    Directed by: {{ movie.director or 'Unknown' }}<br>
-
-                    <a href="{{ url_for('update_movie', user_id=user.id, movie_id=movie.id) }}">Edit</a> |
-                    <form action="{{ url_for('delete_movie', user_id=user.id, movie_id=movie.id) }}"
-                          method="post"
-                          style="display:inline;">
-                      <button
-                        type="submit"
-                        class="link-button"
-                        onclick="return confirm('Delete this movie?');"
-                      >Delete</button>
-                    </form>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No movies found for this user.</p>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flashes">
+        {% for category, msg in messages %}
+          <li class="{{ category }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
     {% endif %}
+  {% endwith %}
 
-    <p>
-      <a href="{{ url_for('add_movie', user_id=user.id) }}">Add New Movie</a><br>
-      <a href="{{ url_for('list_users') }}">Back to Users List</a>
-    </p>
+  <h1>{{ user.name }}’s Favorite Movies</h1>
+
+  {% if movies %}
+    <ul>
+      {% for movie in movies %}
+        <li>
+          {% if movie.poster and movie.poster != 'N/A' %}
+            <img src="{{ movie.poster }}"
+                 alt="Poster of {{ movie.name }}"
+                 style="max-width:200px; display:block; margin-bottom:0.5rem;">
+          {% else %}
+            <em>No poster available</em><br>
+          {% endif %}
+          <strong>{{ movie.name }}</strong> ({{ movie.year }}) – Rated: {{ movie.rating }}<br>
+          Directed by: {{ movie.director }}<br>
+          <a href="{{ url_for('main.update_movie', user_id=user.id, movie_id=movie.id) }}">Edit</a> |
+          <form action="{{ url_for('main.delete_movie', user_id=user.id, movie_id=movie.id) }}"
+                method="post" style="display:inline;"
+                onsubmit="return confirm('Delete this movie?');">
+            <button type="submit">Delete</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No movies found for this user.</p>
+  {% endif %}
+
+  <p>
+    <a href="{{ url_for('main.add_movie', user_id=user.id) }}">Add New Movie</a><br>
+    <a href="{{ url_for('main.list_users') }}">← Back to Users List</a><br>
+    <a href="{{ url_for('main.index') }}">← Back to Index</a>
+  </p>
 
 </body>
 </html>

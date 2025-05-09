@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users - MovieWeb App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add User – MovieWeb App</title>
 </head>
 <body>
-<!-- FLASH MESSAGES -->
+
+  <!-- Flash messages block -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <ul class="flashes">
@@ -16,11 +17,18 @@
       </ul>
     {% endif %}
   {% endwith %}
-    <h1>Add User</h1>
-    <form method="POST">
-    <label for="name">User Name:</label>
+
+  <h1>Add New User</h1>
+  <form action="{{ url_for('main.add_user') }}" method="post">
+    <label for="name">Name:</label>
     <input type="text" name="name" id="name" required>
-    <button type="submit">Add User</button>
-</form>
+    <button type="submit">Create User</button>
+  </form>
+
+  <p>
+    <a href="{{ url_for('main.list_users') }}">← Back to Users List</a><br>
+    <a href="{{ url_for('main.index') }}">← Back to Index</a>
+  </p>
+
 </body>
 </html>
