@@ -3,9 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Movie Web App Index</title>
+  <title>Movie Web App – Index</title>
 </head>
 <body>
+
+  <!-- FLASH MESSAGES -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flashes">
+        {% for category, msg in messages %}
+          <li class="{{ category }}">{{ msg }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
   <h1>Movie Web App – Index</h1>
   <ul>
     <li><a href="{{ url_for('home') }}">Home</a></li>
@@ -22,5 +34,6 @@
     <li><a href="/users/USER_ID/update_movie/MOVIE_ID">Update a Movie</a></li>
     <li><a href="/users/USER_ID/delete_movie/MOVIE_ID">Delete a Movie</a></li>
   </ul>
+
 </body>
 </html>

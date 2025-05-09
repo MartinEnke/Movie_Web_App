@@ -69,11 +69,10 @@ def list_users():
     return render_template('users_list.html', users=users)
 
 
-@app.route('/add_user', methods=['GET', 'POST'])
+@app.route('/add_user', methods=['GET','POST'])
 def add_user():
     if request.method == 'POST':
-        # 1) Get & validate input
-        name = request.form.get('name', '').strip()
+        name = request.form.get('name','').strip()
         if not name:
             flash("Please enter a name.", "warning")
             return render_template('add_user.html')
@@ -81,58 +80,49 @@ def add_user():
             flash("Name must be at least 3 characters long.", "warning")
             return render_template('add_user.html')
 
-        # 2) Try to add the user
+        # Manually add & commit here
+        user = User(name=name)
+        db.session.add(user)
         try:
-            new_user = data_manager.add_user(name)
-            # If your data_manager.add_user() doesn't commit, do it here:
-            # db.session.commit()
-            flash(f"User “{new_user.name}” created successfully.", "success")
+            db.session.commit()
+            flash(f"User “{user.name}” created successfully.", "success")
             return redirect(url_for('list_users'))
 
         except IntegrityError:
-            # e.g. UNIQUE constraint failed: users.name
             db.session.rollback()
             flash(f"A user named “{name}” already exists.", "error")
             return render_template('add_user.html')
 
         except SQLAlchemyError:
-            # any other database error
             db.session.rollback()
             current_app.logger.exception("Database error creating user")
             abort(500)
 
         except Exception:
-            # catch‐all for anything unexpected
+            db.session.rollback()
             current_app.logger.exception("Unexpected error creating user")
             abort(500)
 
-    # GET
     return render_template('add_user.html')
 
 
 @app.route('/users/<int:user_id>')
 def user_movies(user_id):
-    # 1) Fetch the user or 404
     user = User.query.get_or_404(user_id)
 
-    # 2) Safely fetch their movies
     try:
         movies = data_manager.get_user_movies(user_id)
     except SQLAlchemyError:
-        # Log the full stack trace for debugging
-        current_app.logger.exception(
-            "Database error fetching movies for user %s", user_id
-        )
-        # Return a 500 so the user sees your friendly error page
+        db.session.rollback()
+        current_app.logger.exception("Database error fetching movies")
         abort(500)
     except Exception:
-        # Catch‐all, in case your data_manager raises something else
-        current_app.logger.exception(
-            "Unexpected error fetching movies for user %s", user_id
-        )
+        current_app.logger.exception("Unexpected error fetching movies")
         abort(500)
 
-    # 3) Render the template with an empty list if no movies found
+    if not movies:
+        flash("No movies found", "info")   # ← **ADD THIS**
+
     return render_template('user_movies.html', user=user, movies=movies)
 
 
