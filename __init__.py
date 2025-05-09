@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 
 # Initialize the SQLAlchemy object
@@ -16,6 +16,16 @@ def create_app(test_config: dict = None):
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(app.instance_path, 'movie_web.db')}",
         SQLALCHEMY_TRACK_MODIFICATIONS = False,
     )
+
+    # Application‐wide error handlers:
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template('404.html'), 404
+
+    @app.errorhandler(500)
+    def internal_error(e):
+        db.session.rollback()
+        return render_template('500.html'), 500
 
     # Override with testing config if provided
     if test_config:
