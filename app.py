@@ -1,22 +1,20 @@
 from flask import render_template, request, redirect, url_for, abort, flash, current_app
-from Movie_Web_App import create_app, db, data_manager  # Import the factory and db object
+from Movie_Web_App import create_app, db, data_manager
 from Movie_Web_App.data_manager.models import User, Movie
 from Movie_Web_App.data_manager.sqlite_data_manager import SQLiteDataManager
-import requests
-from Movie_Web_App.omdb_api import fetch_movie_data  # Import your custom OMDb module
+from Movie_Web_App.omdb_api import fetch_movie_data
 import os
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
-# Create the Flask app using the factory
+
 app = create_app()
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
-# initializing the data_manager
 data_manager = SQLiteDataManager(db)
 
 
-# error routes
+# Error routes
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
@@ -28,45 +26,113 @@ def internal_error(e):
     return render_template('500.html'), 500
 
 
-# Define routes
 @app.route('/')
 def index():
-    users = db.session.query(User).all()
+    try:
+        # Fetch all users
+        users = db.session.query(User).all() or []
+    except SQLAlchemyError:
+        current_app.logger.exception("Database error fetching users on index")
+        abort(500)  # will trigger your 500.html
+    except Exception:
+        current_app.logger.exception("Unexpected error on index")
+        abort(500)
+
+    if not users:
+        # Let the user know there's nothing to show yet
+        flash("No users yet—why not add one?", "info")
+
     return render_template('index.html', users=users)
+
 
 @app.route('/home')
 def home():
     return "Welcome to MovieWeb App!"
 
+
 @app.route('/users')
 def list_users():
-    users = data_manager.get_all_users()  # Call the method from data_manager
-    return render_template('users_list.html', users=users)  # Pass users to a template
+    try:
+        users = data_manager.get_all_users() or []
+    except SQLAlchemyError:
+        current_app.logger.exception("Database error fetching all users")
+        # abort(500) will trigger your 500 error page
+        abort(500)
+    except Exception:
+        current_app.logger.exception("Unexpected error fetching all users")
+        abort(500)
+
+    if not users:
+        # Inform the user there are no users yet
+        flash("No users found. Why not add one?", "info")
+
+    return render_template('users_list.html', users=users)
+
 
 @app.route('/add_user', methods=['GET', 'POST'])
 def add_user():
     if request.method == 'POST':
-        # Get the name from the form
-        name = request.form['name']
+        # 1) Get & validate input
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash("Please enter a name.", "warning")
+            return render_template('add_user.html')
         if len(name) < 3:
-            return "Name too short", 400
+            flash("Name must be at least 3 characters long.", "warning")
+            return render_template('add_user.html')
 
-        # Add the new user using the DataManager
-        data_manager.add_user(name)
+        # 2) Try to add the user
+        try:
+            new_user = data_manager.add_user(name)
+            # If your data_manager.add_user() doesn't commit, do it here:
+            # db.session.commit()
+            flash(f"User “{new_user.name}” created successfully.", "success")
+            return redirect(url_for('list_users'))
 
-        # Redirect to the list of users
-        return redirect(url_for('list_users'))
+        except IntegrityError:
+            # e.g. UNIQUE constraint failed: users.name
+            db.session.rollback()
+            flash(f"A user named “{name}” already exists.", "error")
+            return render_template('add_user.html')
 
+        except SQLAlchemyError:
+            # any other database error
+            db.session.rollback()
+            current_app.logger.exception("Database error creating user")
+            abort(500)
+
+        except Exception:
+            # catch‐all for anything unexpected
+            current_app.logger.exception("Unexpected error creating user")
+            abort(500)
+
+    # GET
     return render_template('add_user.html')
+
 
 @app.route('/users/<int:user_id>')
 def user_movies(user_id):
-    # Fetch the user and their movies
-    user = User.query.get_or_404(user_id)  # Get the user by ID, or return 404 if not found
-    if user is None:
-        abort(404)
-    movies = data_manager.get_user_movies(user_id)  # Use the DataManager to get user's movies
+    # 1) Fetch the user or 404
+    user = User.query.get_or_404(user_id)
 
+    # 2) Safely fetch their movies
+    try:
+        movies = data_manager.get_user_movies(user_id)
+    except SQLAlchemyError:
+        # Log the full stack trace for debugging
+        current_app.logger.exception(
+            "Database error fetching movies for user %s", user_id
+        )
+        # Return a 500 so the user sees your friendly error page
+        abort(500)
+    except Exception:
+        # Catch‐all, in case your data_manager raises something else
+        current_app.logger.exception(
+            "Unexpected error fetching movies for user %s", user_id
+        )
+        abort(500)
+
+    # 3) Render the template with an empty list if no movies found
     return render_template('user_movies.html', user=user, movies=movies)
 
 
