@@ -1,55 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ user.name }}’s Movies</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}{{ user.name }}’s Movies{% endblock %}
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <ul class="flashes">
-        {% for category, msg in messages %}
-          <li class="{{ category }}">{{ msg }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-  {% endwith %}
+{% block content %}
+  <h2 class="font-semibold mb-4">{{ user.name }}’s Cinesis</h2>
 
-  <h1>{{ user.name }}’s Favorite Movies</h1>
 
   {% if movies %}
-    <ul>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {% for movie in movies %}
-        <li>
-          {% if movie.poster and movie.poster != 'N/A' %}
-            <img src="{{ movie.poster }}"
-                 alt="Poster of {{ movie.name }}"
-                 style="max-width:200px; display:block; margin-bottom:0.5rem;">
-          {% else %}
-            <em>No poster available</em><br>
+        <div class="bg-white rounded-lg shadow p-4 flex flex-col">
+          {% if movie.poster and movie.poster!='N/A' %}
+            <img src="{{ movie.poster }}" alt="" class="rounded mb-4 object-cover h-48 w-full">
           {% endif %}
-          <strong>{{ movie.name }}</strong> ({{ movie.year }}) – Rated: {{ movie.rating }}<br>
-          Directed by: {{ movie.director }}<br>
-          <a href="{{ url_for('main.update_movie', user_id=user.id, movie_id=movie.id) }}">Edit</a> |
-          <form action="{{ url_for('main.delete_movie', user_id=user.id, movie_id=movie.id) }}"
-                method="post" style="display:inline;"
-                onsubmit="return confirm('Delete this movie?');">
-            <button type="submit">Delete</button>
-          </form>
-        </li>
+          <h2 class="text-xl font-bold">{{ movie.name }}</h2>
+          <p class="text-sm text-gray-600">{{ movie.year }} • {{ movie.rating }}/10</p>
+          <p class="mt-auto">
+            <a href="{{ url_for('main.update_movie',user_id=user.id,movie_id=movie.id) }}"
+               class="text-accent hover:underline mr-2">Edit</a>
+            <form action="{{ url_for('main.delete_movie',user_id=user.id,movie_id=movie.id) }}"
+                  method="post" class="inline">
+              <button type="submit"
+                      class="text-red-600 hover:underline">Delete</button>
+            </form>
+          </p>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
   {% else %}
     <p>No movies found for this user.</p>
   {% endif %}
 
-  <p>
-    <a href="{{ url_for('main.add_movie', user_id=user.id) }}">Add New Movie</a><br>
-    <a href="{{ url_for('main.list_users') }}">← Back to Users List</a><br>
-    <a href="{{ url_for('main.index') }}">← Back to Index</a>
-  </p>
-
-</body>
-</html>
+  <div class="mt-6 space-x-4">
+    <a href="{{ url_for('main.add_movie', user_id=user.id) }}" class="text-accent hover:underline">Add Movie</a>
+    <a href="{{ url_for('main.list_users') }}" class="hover:underline">Back to Users</a>
+  </div>
+{% endblock %}

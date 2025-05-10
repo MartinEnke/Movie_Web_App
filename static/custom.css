@@ -1,0 +1,42 @@
+/* static/custom.css */
+
+/* Example: override Tailwind’s link hover color */
+.hover\hover {
+  text-decoration-color: #cd3234; /* your accent color */
+}
+
+/* Cinema‑white headings, fluid size between 1.5rem and 2.5rem */
+h2 {
+  color: #ffffff;
+  font-size: clamp(2rem, 8vw, 4rem);
+  line-height: 2.2;
+}
+
+/* To color the TEXT in your header */
+
+.header-fade {
+  /* Black at top (85% opacity) → fully transparent at bottom */
+  background: linear-gradient(
+    to bottom,
+    rgba(1, 0, 0, 0.7) 90%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+/* Example: a reusable card shadow */
+.card-shadow {
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Make all text white by default */
+body {
+  background: url('curtains-bg.png') no-repeat center center;
+  background-size: cover;
+}
+
+
+/* Example: style your footer */
+footer {
+  background: #1f2937;
+  color: white;
+  padding: 1rem 0;
+}

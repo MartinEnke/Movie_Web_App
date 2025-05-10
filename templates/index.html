@@ -1,28 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Movie Web App – Index</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <ul class="flashes">
-        {% for category, msg in messages %}
-          <li class="{{ category }}">{{ msg }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-  {% endwith %}
+{% block title %}Home – MovieWeb{% endblock %}
 
-  <h1>Movie Web App – Index</h1>
-  <ul>
-    <li><a href="{{ url_for('main.index') }}">Index Page</a></li>
-    <li><a href="{{ url_for('main.list_users') }}">List All Users</a></li>
-    <li><a href="{{ url_for('main.add_user') }}">Add a New User</a></li>
+{% block content %}
+  <h1 class="text-3xl font-bold mb-4"></h1>
+  <ul class="space-y-2">
+    <li><a href="{{ url_for('main.list_users') }}" class="text-accent hover:underline">List All Users</a></li>
+    <li><a href="{{ url_for('main.add_user') }}"   class="text-accent hover:underline">Add a New User</a></li>
   </ul>
-
-</body>
-</html>
+{% endblock %}

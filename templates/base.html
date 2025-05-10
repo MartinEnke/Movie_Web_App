@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}MovieWeb App{% endblock %}</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Your custom CSS (with .header-vertical & .header-horizontal) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+
+  <!-- Optional: customize Tailwind config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1f2937',
+            accent: '#f97316',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="text-white bg-gray-900">
+
+  <!-- Navigation -->
+  <nav x-data="{ open: false }"
+     class="header-fade text-white p-4 backdrop-blur-md">
+    <!-- or use class="header-horizontal ..." for horizontal gradient -->
+    <div class="container mx-auto flex items-center justify-between">
+      <a href="{{ url_for('main.index') }}" class="text-xl font-bold">Cinesis</a>
+      <button class="sm:hidden focus:outline-none" @click="open = !open">
+        <!-- hamburger icon -->
+      </button>
+      <div :class="open ? 'block' : 'hidden'" class="sm:flex space-x-4">
+        <a href="{{ url_for('main.list_users') }}" class="hover:underline">Users</a>
+        <a href="{{ url_for('main.add_user') }}"   class="hover:underline">Add User</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  <div class="container mx-auto mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2">
+          {% for category, msg in messages %}
+            <div class="p-3 rounded
+                        {% if category=='success' %}bg-green-200 text-green-800
+                        {% elif category=='error'   %}bg-red-200   text-red-800
+                        {% else %}bg-yellow-200 text-yellow-800{% endif %}">
+              {{ msg }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main content -->
+  <main class="container mx-auto p-4">
+    {% block content %}{% endblock %}
+  </main>
+
+</body>
+</html>

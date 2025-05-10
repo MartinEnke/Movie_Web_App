@@ -1,35 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Users – MovieWeb App</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}All Users – Cienesis{% endblock %}
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <ul class="flashes">
-        {% for category, msg in messages %}
-          <li class="{{ category }}">{{ msg }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-  {% endwith %}
+{% block content %}
+  <!-- Center the heading -->
+  <h1 class="text-2xl font-semibold mb-4 text-center">All Users</h1>
 
-  <h1>Users</h1>
-  <ul>
+  <div class="space-y-3">
     {% for user in users %}
-      <li>
-        <a href="{{ url_for('main.user_movies', user_id=user.id) }}">
-          {{ user.name }}
-        </a>
-      </li>
+      <a href="{{ url_for('main.user_movies', user_id=user.id) }}"
+         class="flex items-center justify-center
+                bg-white bg-opacity-30 text-white p-4 rounded-lg
+                transition hover:bg-opacity-50">
+        {{ user.name }}
+      </a>
     {% endfor %}
-  </ul>
-
-  <p><a href="{{ url_for('main.add_user') }}">Add another user</a></p>
-  <p><a href="{{ url_for('main.index') }}">← Back to Index</a></p>
-
-</body>
-</html>
+  </div>
+{% endblock %}
