@@ -6,6 +6,7 @@ from . import db
 from .data_manager.models import User, Movie
 from .omdb_api import fetch_movie_data
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from .data_manager.models import Movie
 
 main = Blueprint('main', __name__)
 
@@ -21,14 +22,15 @@ def internal_error(e):
 @main.route('/')
 def index():
     try:
-        users = User.query.all() or []
+        movies = Movie.query.order_by(Movie.title).all()
     except SQLAlchemyError:
         current_app.logger.exception("DB error on index")
         abort(500)
 
-    if not users:
-        flash("No users yet—why not add one?", "info")
-    return render_template('index.html', users=users)
+    if not movies:
+        flash("No movies in the catalog yet—seed some with `flask seed-movies`!", "info")
+
+    return render_template('index.html', movies=movies)
 
 @main.route('/add_user', methods=['GET','POST'])
 def add_user():
@@ -102,15 +104,35 @@ def add_movie(user_id):
             flash("Movie not found.", "warning")
             return render_template('add_movie.html', user_id=user_id)
 
-        m = Movie(
-            name=title,
-            director=(data['director'] if data['director']!="N/A" else request.form.get('director','')),
-            year=int(data['year']),
-            rating=float(data['rating']),
-            poster=data['poster'],
-            user_id=user_id
+        # Parse a single year from OMDb’s Year (handles ranges and ints)
+        raw_year = data.get("Year")  # could be int or str
+        year_str = str(raw_year or "")  # normalize to string, avoid None
+
+        # If there’s any dash, split on the first occurrence
+        for sep in ("–", "-", "—"):
+            if sep in year_str:
+                year_str = year_str.split(sep)[0]
+                break
+
+        try:
+            year = int(year_str)
+        except (ValueError, TypeError):
+            year = None
+
+        raw_genre = data.get("Genre", "")  # e.g. "Action, Adventure, Sci-Fi"
+        genre = raw_genre.strip()
+
+        movie = Movie(
+            title=data["title"],
+            director=data["director"],
+            year=year,  # use parsed year
+            rating=float(data["rating"]) if data.get("rating") else None,
+            poster=data["poster"],
+            genre=genre
         )
-        db.session.add(m)
+
+
+        db.session.add(movie)
         try:
             db.session.commit()
             flash(f"“{title}” added.", "success")
@@ -180,3 +202,25 @@ def delete_movie(user_id, movie_id):
         current_app.logger.exception("DB error deleting movie")
         flash("Could not delete.", "error")
     return redirect(url_for('main.user_movies', user_id=user_id))
+
+
+@main.route('/search')
+def search():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return render_template('search_results.html', query=q, users=[], movies=[])
+
+    try:
+        # Case‑insensitive partial match
+        users = User.query.filter(User.name.ilike(f"%{q}%")).all()
+        movies = Movie.query.filter(Movie.name.ilike(f"%{q}%")).all()
+    except SQLAlchemyError:
+        current_app.logger.exception("DB error during search")
+        users, movies = [], []
+
+    return render_template(
+        'search_results.html',
+        query=q,
+        users=users,
+        movies=movies
+    )

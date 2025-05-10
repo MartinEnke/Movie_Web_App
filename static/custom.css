@@ -5,6 +5,8 @@
   text-decoration-color: #cd3234; /* your accent color */
 }
 
+
+
 /* Cinema‑white headings, fluid size between 1.5rem and 2.5rem */
 h2 {
   color: #ffffff;
@@ -18,7 +20,7 @@ h2 {
   /* Black at top (85% opacity) → fully transparent at bottom */
   background: linear-gradient(
     to bottom,
-    rgba(1, 0, 0, 0.7) 90%,
+    rgba(1, 0, 0, 0.7) 95%,
     rgba(0, 0, 0, 0.2) 100%
   );
 }

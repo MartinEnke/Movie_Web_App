@@ -1,13 +1,14 @@
 import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 # Initialize the SQLAlchemy object
 db = SQLAlchemy()
 data_manager = None
 
 # Application factory
-def create_app(test_config: dict = None):
+def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
 
     # Default production config
@@ -39,6 +40,7 @@ def create_app(test_config: dict = None):
 
     # Initialize extensions
     db.init_app(app)
+    migrate = Migrate(app, db)
 
     # Bind data manager after db is initialized
     from .data_manager.sqlite_data_manager import SQLiteDataManager

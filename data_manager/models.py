@@ -1,30 +1,45 @@
-from Movie_Web_App import db  # Import db from the global app context
+from datetime import datetime
+from Movie_Web_App import db
 
 
-# Define the User model
+# Association table for users↔movies
+UserMovie = db.Table(
+    'user_movies',
+    db.Column('user_id',  db.Integer, db.ForeignKey('users.id'),   primary_key=True),
+    db.Column('movie_id', db.Integer, db.ForeignKey('movies.id'),  primary_key=True),
+    db.Column('added_at', db.DateTime, default=datetime.utcnow)
+)
+
 class User(db.Model):
-    __tablename__ = "users"  # Define the table name
+    __tablename__ = 'users'
+    id     = db.Column(db.Integer, primary_key=True)
+    name   = db.Column(db.String(80), unique=True, nullable=False)
 
-    # Columns
-    id = db.Column(db.Integer, primary_key=True)  # Primary key for the User model
-    name = db.Column(db.String(80), unique=True, nullable=False)  # User's name, must be unique
+    # Many-to-many to Movie
+    movies = db.relationship(
+        'Movie',
+        secondary=UserMovie,
+        back_populates='users',
+        lazy='dynamic'
+    )
 
-    # Relationship to Movie
-    movies = db.relationship('Movie', backref='owner', lazy=True)  # Change 'user' to 'owner'
-
-
-# Define the Movie model
 class Movie(db.Model):
-    __tablename__ = "movies"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
+    __tablename__ = 'movies'
+    id       = db.Column(db.Integer, primary_key=True)
+    title    = db.Column(db.String(120), nullable=False)
     director = db.Column(db.String(120))
-    year = db.Column(db.Integer)
-    rating = db.Column(db.Float)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    poster = db.Column(db.String(255))
+    year     = db.Column(db.Integer)
+    rating   = db.Column(db.Float)
+    poster   = db.Column(db.String(255))
+    genre    = db.Column(db.String(120))   # new: genre list, comma‑separated
 
-    # Relationship to User
-    user = db.relationship('User', backref='movies_owned', lazy=True)  # Updated backref to 'movies_owned'
+    users = db.relationship(
+        'User',
+        secondary=UserMovie,
+        back_populates='movies',
+        lazy='dynamic'
+    )
 
+    __table_args__ = (
+        db.UniqueConstraint('title', 'year', name='uq_movie_title_year'),
+    )

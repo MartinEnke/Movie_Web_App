@@ -14,6 +14,7 @@
           {% endif %}
           <h2 class="text-xl font-bold">{{ movie.name }}</h2>
           <p class="text-sm text-gray-600">{{ movie.year }} • {{ movie.rating }}/10</p>
+          <p><em>Genre:</em> {{ movie.genre or "Unknown" }}</p>
           <p class="mt-auto">
             <a href="{{ url_for('main.update_movie',user_id=user.id,movie_id=movie.id) }}"
                class="text-accent hover:underline mr-2">Edit</a>
