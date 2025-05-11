@@ -12,7 +12,8 @@ class SQLiteDataManager(DataManagerInterface):
 
     def get_user_movies(self, user_id):
         """Fetch movies for a specific user"""
-        return Movie.query.filter_by(user_id=user_id).all()
+        user = User.query.get(user_id)
+        return user.movies if user else []
 
     def add_user(self, name):
         """Add a new user to the database"""

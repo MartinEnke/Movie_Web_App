@@ -1,38 +1,49 @@
+{# templates/search_results.html #}
 {% extends "base.html" %}
-{% block title %}Search: {{ query }} – Cienesis{% endblock %}
+
+{% block title %}Search Results for “{{ query }}”{% endblock %}
 
 {% block content %}
-  <h1 class="text-2xl font-semibold mb-4 text-center">
-    Search results for “{{ query }}”
-  </h1>
+  <h2 class="text-3xl font-semibold mb-4">Search Results for “{{ query }}”</h2>
 
+  <!-- Users matching -->
+  {% if users %}
+    <h3 class="text-2xl mb-2">Users</h3>
+    <ul class="mb-6 space-y-2">
+      {% for u in users %}
+        <li>
+          <a href="{{ url_for('main.user_movies', user_id=u.id) }}"
+             class="text-accent hover:underline">
+            {{ u.name }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <!-- Movies matching -->
+  {% if movies %}
+    <h3 class="text-2xl mb-2">Movies</h3>
+    <ul class="space-y-2">
+      {% for m in movies %}
+        <li class="bg-white bg-opacity-10 p-3 rounded flex justify-between items-center">
+          <div>
+            <strong class="text-white">{{ m.title }}</strong>
+            {% if m.year %}
+              <small class="text-gray-200">({{ m.year }})</small>
+            {% endif %}
+            {% if m.director %}
+              <span class="text-gray-400 ml-2">directed by {{ m.director }}</span>
+            {% endif %}
+          </div>
+          <!-- no 'add' form here, since this is not per-user -->
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <!-- Nothing found -->
   {% if not users and not movies %}
-    <p class="text-center">No users or movies found.</p>
-  {% else %}
-    {% if users %}
-      <h2 class="text-xl font-semibold mt-6 mb-2">Users</h2>
-      <ul class="list-disc list-inside space-y-1">
-        {% for u in users %}
-          <li>
-            <a href="{{ url_for('main.user_movies', user_id=u.id) }}"
-               class="text-accent hover:underline">
-               {{ u.name }}
-            </a>
-          </li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-
-    {% if movies %}
-      <h2 class="text-xl font-semibold mt-6 mb-2">Movies</h2>
-      <ul class="list-disc list-inside space-y-1">
-        {% for m in movies %}
-          <li>
-            <strong>{{ m.name }}</strong>
-             ({{ m.year }})
-          </li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+    <p class="text-gray-300">No users or movies found.</p>
   {% endif %}
 {% endblock %}

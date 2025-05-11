@@ -2,11 +2,11 @@ from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, abort, current_app
 )
-from . import db
+from . import db, data_manager
 from .data_manager.models import User, Movie
 from .omdb_api import fetch_movie_data
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from .data_manager.models import Movie
+from sqlalchemy import or_
 
 main = Blueprint('main', __name__)
 
@@ -72,18 +72,78 @@ def list_users():
         flash("No users found.", "info")
     return render_template('users_list.html', users=users)
 
-@main.route('/users/<int:user_id>')
+
+@main.route('/users/<int:user_id>', methods=['GET'])
 def user_movies(user_id):
     user = User.query.get_or_404(user_id)
-    try:
-        movies = current_app.data_manager.get_user_movies(user_id)
-    except SQLAlchemyError:
-        current_app.logger.exception("DB error fetching movies")
-        abort(500)
+    q    = request.args.get('q', '').strip()
 
-    if not movies:
-        flash("No movies found", "info")
-    return render_template('user_movies.html', user=user, movies=movies)
+    # Prepare two result‐sets
+    new_results   = []
+    owned_results = []
+
+    if q:
+        # Search the global catalog
+        catalog = Movie.query.filter(
+            (Movie.title.ilike(f'%{q}%')) |
+            (Movie.director.ilike(f'%{q}%'))
+        ).all()
+
+        # Partition into owned vs new
+        owned_ids = {m.id for m in user.movies}
+        for m in catalog:
+            if m.id in owned_ids:
+                owned_results.append(m)
+            else:
+                new_results.append(m)
+
+    return render_template(
+        'user_movies.html',
+        user=user,
+        movies=user.movies,
+        query=q,
+        new_results=new_results,
+        owned_results=owned_results
+    )
+
+
+@main.route('/users/<int:user_id>/add_existing/<int:movie_id>', methods=['POST'])
+def add_existing_movie(user_id, movie_id):
+    user  = User.query.get_or_404(user_id)
+    movie = Movie.query.get_or_404(movie_id)
+
+    # grab q from the form (we’ll include it below)
+    q = request.form.get('q','').strip()
+
+    if movie in user.movies:
+        flash(f"“{movie.title}” is already in your list.", "warning")
+    else:
+        try:
+            user.movies.append(movie)
+            db.session.commit()
+            flash(f"Added “{movie.title}” to your list!", "success")
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("DB error attaching movie")
+            flash("Could not add movie. Try again.", "error")
+
+    # now recompute how many new matches remain for this q
+    remaining = []
+    if q:
+        catalog = Movie.query.filter(
+            (Movie.title.ilike(f'%{q}%')) |
+            (Movie.director.ilike(f'%{q}%'))
+        ).all()
+        owned_ids = {m.id for m in user.movies}
+        remaining = [m for m in catalog if m.id not in owned_ids]
+
+    # if we still have unmatched results, keep the q in the URL
+    if q and remaining:
+        return redirect(url_for('main.user_movies', user_id=user_id, q=q))
+    # otherwise clear the search
+    return redirect(url_for('main.user_movies', user_id=user_id))
+
+
 
 @main.route('/users/<int:user_id>/add_movie', methods=['GET','POST'])
 def add_movie(user_id):
@@ -144,6 +204,28 @@ def add_movie(user_id):
             return render_template('add_movie.html', user_id=user_id)
 
     return render_template('add_movie.html', user_id=user_id)
+
+
+@main.route('/users/<int:user_id>/remove_movie/<int:movie_id>', methods=['POST'])
+def remove_movie(user_id, movie_id):
+    user  = User.query.get_or_404(user_id)
+    movie = Movie.query.get_or_404(movie_id)
+
+    if movie not in user.movies:
+        # Either 404 or just flash “not in your list”
+        abort(404)
+
+    try:
+        # Remove the association, not the movie row
+        user.movies.remove(movie)
+        db.session.commit()
+        flash(f"Removed '{movie.title}' from your list.", "success")
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("DB error removing movie from user")
+        flash("Could not remove movie. Try again.", "error")
+
+    return redirect(url_for('main.user_movies', user_id=user_id))
 
 
 @main.route('/users/<int:user_id>/update_movie/<int:movie_id>', methods=['GET','POST'])
@@ -208,12 +290,17 @@ def delete_movie(user_id, movie_id):
 def search():
     q = request.args.get('q', '').strip()
     if not q:
-        return render_template('search_results.html', query=q, users=[], movies=[])
+        return render_template('search_results.html',
+                               query=q, users=[], movies=[])
 
     try:
-        # Case‑insensitive partial match
         users = User.query.filter(User.name.ilike(f"%{q}%")).all()
-        movies = Movie.query.filter(Movie.name.ilike(f"%{q}%")).all()
+        movies = Movie.query.filter(
+            or_(
+                Movie.title.ilike(f"%{q}%"),
+                Movie.director.ilike(f"%{q}%")
+            )
+        ).all()
     except SQLAlchemyError:
         current_app.logger.exception("DB error during search")
         users, movies = [], []

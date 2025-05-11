@@ -1,38 +1,97 @@
+{# templates/user_movies.html #}
 {% extends "base.html" %}
-{% block title %}{{ user.name }}’s Movies{% endblock %}
+
+{% block title %}
+  {{ user.name }}’s Movies – CineSis
+{% endblock %}
 
 {% block content %}
-  <h2 class="font-semibold mb-4">{{ user.name }}’s Cinesis</h2>
+  <h2 class="text-3xl font-semibold mb-4">
+    <a href="{{ url_for('main.user_movies', user_id=user.id) }}"
+       class="hover:underline">
+      {{ user.name }}’s Favorite Movies
+    </a>
+  </h2>
 
+  {# — Search Form — #}
+  <form method="get"
+        action="{{ url_for('main.user_movies', user_id=user.id) }}"
+        class="mb-6 flex space-x-2">
+    <input type="text"
+           name="q"
+           value="{{ query }}"
+           placeholder="Search catalog…"
+           class="flex-1 px-3 py-2 rounded bg-white bg-opacity-20 text-white">
+    <button type="submit"
+            class="px-4 py-2 bg-accent text-white rounded hover:bg-orange-600">
+      Search
+    </button>
+  </form>
 
-  {% if movies %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {% for movie in movies %}
-        <div class="bg-white rounded-lg shadow p-4 flex flex-col">
-          {% if movie.poster and movie.poster!='N/A' %}
-            <img src="{{ movie.poster }}" alt="" class="rounded mb-4 object-cover h-48 w-full">
-          {% endif %}
-          <h2 class="text-xl font-bold">{{ movie.name }}</h2>
-          <p class="text-sm text-gray-600">{{ movie.year }} • {{ movie.rating }}/10</p>
-          <p><em>Genre:</em> {{ movie.genre or "Unknown" }}</p>
-          <p class="mt-auto">
-            <a href="{{ url_for('main.update_movie',user_id=user.id,movie_id=movie.id) }}"
-               class="text-accent hover:underline mr-2">Edit</a>
-            <form action="{{ url_for('main.delete_movie',user_id=user.id,movie_id=movie.id) }}"
-                  method="post" class="inline">
+  {% if query %}
+    <h3 class="text-2xl mb-2 text-white">Results for “{{ query }}”</h3>
+
+    {% if new_results %}
+      <ul class="mb-4 space-y-2">
+        {% for m in new_results %}
+          <li class="flex justify-between items-center bg-white bg-opacity-10 p-3 rounded">
+            <div>
+              <strong class="text-white">{{ m.title }}</strong>
+              <small class="text-gray-200">({{ m.year or '—' }})</small>
+            </div>
+            <form method="post"
+                  action="{{ url_for('main.add_existing_movie',
+                                     user_id=user.id,
+                                     movie_id=m.id) }}">
+              <input type="hidden" name="q" value="{{ query }}">
               <button type="submit"
-                      class="text-red-600 hover:underline">Delete</button>
+                      class="px-3 py-1 bg-green-500 text-white rounded">
+                + Add
+              </button>
             </form>
-          </p>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p>No movies found for this user.</p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if owned_results %}
+      <h4 class="text-xl mb-1 text-gray-300">Already in your list</h4>
+      <ul class="mb-6 space-y-2">
+        {% for m in owned_results %}
+          <li class="bg-white bg-opacity-10 p-3 rounded">
+            <strong class="text-gray-100">{{ m.title }}</strong>
+            <small class="text-gray-400">({{ m.year or '—' }})</small>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if not new_results and not owned_results %}
+      <p class="text-gray-300 mb-6">No matches found.</p>
+    {% endif %}
   {% endif %}
 
-  <div class="mt-6 space-x-4">
-    <a href="{{ url_for('main.add_movie', user_id=user.id) }}" class="text-accent hover:underline">Add Movie</a>
-    <a href="{{ url_for('main.list_users') }}" class="hover:underline">Back to Users</a>
-  </div>
+  <h3 class="text-2xl mb-2 text-white">Your List</h3>
+  {% if movies %}
+    <ul class="space-y-4">
+      {% for movie in movies %}
+        <li class="flex justify-between items-center bg-white bg-opacity-10 p-3 rounded">
+          <div>
+            <strong class="text-white">{{ movie.title }}</strong>
+            <span class="text-gray-200">({{ movie.year or '—' }})</span>
+          </div>
+          <form method="post"
+                action="{{ url_for('main.remove_movie',
+                                   user_id=user.id,
+                                   movie_id=movie.id) }}">
+            <button type="submit" class="text-red-400 hover:underline">
+              Remove
+            </button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-gray-300">You haven’t added any movies yet.</p>
+  {% endif %}
 {% endblock %}
