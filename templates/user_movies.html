@@ -1,27 +1,19 @@
 {# templates/user_movies.html #}
 {% extends "base.html" %}
-
-{% block title %}
-  {{ user.name }}’s Movies – CineSis
-{% endblock %}
+{% block title %}{{ user.name }}’s Movies – CineSis{% endblock %}
 
 {% block content %}
-  <h2 class="text-3xl font-semibold mb-4">
-    <a href="{{ url_for('main.user_movies', user_id=user.id) }}"
-       class="hover:underline">
-      {{ user.name }}’s Favorite Movies
-    </a>
+  <h2 class="text-3xl font-semibold mb-4 text-center text-white">
+    {{ user.name }}’s Favorite Movies
   </h2>
 
   {# — Search Form — #}
   <form method="get"
         action="{{ url_for('main.user_movies', user_id=user.id) }}"
         class="mb-6 flex space-x-2">
-    <input type="text"
-           name="q"
-           value="{{ query }}"
+    <input type="text" name="q" value="{{ query }}"
            placeholder="Search catalog…"
-           class="flex-1 px-3 py-2 rounded bg-white bg-opacity-20 text-white">
+           class="flex-1 px-3 py-2 rounded bg-white bg-opacity-20 text-white placeholder-gray-300 focus:bg-opacity-40">
     <button type="submit"
             class="px-4 py-2 bg-accent text-white rounded hover:bg-orange-600">
       Search
@@ -29,69 +21,123 @@
   </form>
 
   {% if query %}
-    <h3 class="text-2xl mb-2 text-white">Results for “{{ query }}”</h3>
+    <h3 class="text-2xl font-semibold mb-6 text-white">
+      Results for “{{ query }}”
+    </h3>
 
+    {# New matches #}
     {% if new_results %}
-      <ul class="mb-4 space-y-2">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-8">
         {% for m in new_results %}
-          <li class="flex justify-between items-center bg-white bg-opacity-10 p-3 rounded">
-            <div>
-              <strong class="text-white">{{ m.title }}</strong>
-              <small class="text-gray-200">({{ m.year or '—' }})</small>
+          <div
+            class="bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg flex flex-col
+                   p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl relative group"
+          >
+            {% if m.poster %}
+              <img src="{{ m.poster }}" alt="{{ m.title }}"
+                   class="w-full h-auto max-h-72 object-contain rounded">
+            {% else %}
+              <div class="w-full h-72 bg-gray-800 flex items-center justify-center rounded">
+                <span class="text-gray-500">No Image</span>
+              </div>
+            {% endif %}
+
+            <div class="p-2 text-center">
+              <p class="text-white font-semibold truncate">{{ m.title }}</p>
+              <p class="text-gray-200 text-sm">{{ m.year or '—' }}</p>
             </div>
+
             <form method="post"
-                  action="{{ url_for('main.add_existing_movie',
-                                     user_id=user.id,
-                                     movie_id=m.id) }}">
+                  action="{{ url_for('main.add_existing_movie', user_id=user.id, movie_id=m.id) }}"
+                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <input type="hidden" name="q" value="{{ query }}">
               <button type="submit"
-                      class="px-3 py-1 bg-green-500 text-white rounded">
+                      class="px-2 py-1 rounded bg-black bg-opacity-70 text-white
+                             hover:bg-opacity-30">
                 + Add
               </button>
             </form>
-          </li>
+          </div>
         {% endfor %}
-      </ul>
+      </div>
     {% endif %}
 
+    {# Already owned #}
     {% if owned_results %}
-      <h4 class="text-xl mb-1 text-gray-300">Already in your list</h4>
-      <ul class="mb-6 space-y-2">
+      <h4 class="text-xl font-semibold mb-4 text-gray-300">Already in your list</h4>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-8">
         {% for m in owned_results %}
-          <li class="bg-white bg-opacity-10 p-3 rounded">
-            <strong class="text-gray-100">{{ m.title }}</strong>
-            <small class="text-gray-400">({{ m.year or '—' }})</small>
-          </li>
+          <div
+            class="bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg flex flex-col
+                   p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl relative group"
+          >
+            {% if m.poster %}
+              <img src="{{ m.poster }}" alt="{{ m.title }}"
+                   class="w-full h-auto max-h-72 object-contain rounded">
+            {% else %}
+              <div class="w-full h-72 bg-gray-800 flex items-center justify-center rounded">
+                <span class="text-gray-500">No Image</span>
+              </div>
+            {% endif %}
+
+            <div class="p-2 text-center">
+              <p class="text-gray-100 font-semibold truncate">{{ m.title }}</p>
+              <p class="text-gray-400 text-sm">{{ m.year or '—' }}</p>
+            </div>
+
+            <span
+              class="absolute top-2 right-2 px-2 py-1 rounded bg-black bg-opacity-70 text-white
+                     opacity-0 group-hover:opacity-100 transition-opacity">
+              In list
+            </span>
+          </div>
         {% endfor %}
-      </ul>
+      </div>
     {% endif %}
 
     {% if not new_results and not owned_results %}
-      <p class="text-gray-300 mb-6">No matches found.</p>
+      <p class="text-gray-300 mb-8">No matches found.</p>
     {% endif %}
   {% endif %}
 
-  <h3 class="text-2xl mb-2 text-white">Your List</h3>
+  {# — The user’s saved list — #}
+  <h3 class="text-2xl font-semibold mb-6 text-white">Your List</h3>
+
   {% if movies %}
-    <ul class="space-y-4">
-      {% for movie in movies %}
-        <li class="flex justify-between items-center bg-white bg-opacity-10 p-3 rounded">
-          <div>
-            <strong class="text-white">{{ movie.title }}</strong>
-            <span class="text-gray-200">({{ movie.year or '—' }})</span>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+      {% for m in movies %}
+        <div
+          class="bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg flex flex-col
+                 p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl relative group"
+        >
+          {% if m.poster %}
+            <img src="{{ m.poster }}" alt="{{ m.title }}"
+                 class="w-full h-auto max-h-72 object-contain rounded">
+          {% else %}
+            <div class="w-full h-72 bg-gray-800 flex items-center justify-center rounded">
+              <span class="text-gray-500">No Image</span>
+            </div>
+          {% endif %}
+
+          <div class="p-2 text-center">
+            <p class="text-white font-semibold truncate">{{ m.title }}</p>
+            <p class="text-gray-200 text-sm">{{ m.year or '—' }}</p>
           </div>
+
           <form method="post"
-                action="{{ url_for('main.remove_movie',
-                                   user_id=user.id,
-                                   movie_id=movie.id) }}">
-            <button type="submit" class="text-red-400 hover:underline">
+                action="{{ url_for('main.remove_movie', user_id=user.id, movie_id=m.id) }}"
+                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button type="submit"
+                    class="px-2 py-1 rounded bg-black bg-opacity-70 text-white
+                           hover:bg-opacity-30">
               Remove
             </button>
           </form>
-        </li>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
   {% else %}
-    <p class="text-gray-300">You haven’t added any movies yet.</p>
+    <p class="text-center text-gray-300">You haven’t added any movies yet.</p>
   {% endif %}
+
 {% endblock %}
