@@ -19,18 +19,37 @@ def internal_error(e):
     db.session.rollback()
     return render_template('500.html'), 500
 
+
 @main.route('/')
 def index():
+    # grab optional ?genre=Comedy
+    selected_genre = request.args.get('genre', type=str)
+
     try:
-        movies = Movie.query.order_by(Movie.title).all()
+        # fetch all movies, optionally filtered by genre substring
+        if selected_genre:
+            # simple “contains” match; your genre field is a comma-separated string
+            movies = Movie.query.filter(Movie.genre.ilike(f"%{selected_genre}%")).all()
+        else:
+            movies = Movie.query.all()
     except SQLAlchemyError:
         current_app.logger.exception("DB error on index")
         abort(500)
 
-    if not movies:
-        flash("No movies in the catalog yet—seed some with `flask seed-movies`!", "info")
+    # also collect all distinct genres for the dropdown
+    all_genres = set()
+    for m in Movie.query.with_entities(Movie.genre).filter(Movie.genre.isnot(None)):
+        for g in m.genre.split(','):
+            all_genres.add(g.strip())
+    sorted_genres = sorted(all_genres)
 
-    return render_template('index.html', movies=movies)
+    return render_template(
+      'index.html',
+      movies=movies,
+      genres=sorted_genres,
+      selected_genre=selected_genre
+    )
+
 
 @main.route('/add_user', methods=['GET','POST'])
 def add_user():

@@ -1,38 +1,47 @@
+{# templates/index.html #}
 {% extends "base.html" %}
 
-{% block title %}All Movies – CineSis{% endblock %}
+{% block title %}{{ selected_genre or 'All Movies' }} – CineFlick{% endblock %}
 
 {% block content %}
-  <h1 class="text-4xl font-bold mb-8 text-center text-white">All Movies</h1>
+  <h1 class="text-4xl font-bold mb-8 text-white">
+  {{ selected_genre or 'All Movies' }}
+</h1>
 
   {% if not movies %}
-    <p class="text-center text-gray-300">No movies found. Try seeding the database!</p>
+    <p class="text-center text-gray-300">
+      {% if selected_genre %}
+        No movies found in “{{ selected_genre }}.”
+      {% else %}
+        No movies found. Try seeding the database!
+      {% endif %}
+    </p>
   {% else %}
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
       {% for movie in movies %}
-      <a href="{{ url_for('main.movie_detail', movie_id=movie.id) }}">
-        <!-- Outer card with padding to show the milky frame -->
-        <div
-          class="bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg flex flex-col
-                 p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl"
-        >
-          {# Poster #}
-          {% if movie.poster %}
-            <img src="{{ movie.poster }}"
-                 alt="Poster of {{ movie.title }}"
-                 class="w-full h-auto max-h-72 object-contain rounded">
-          {% else %}
-            <div class="w-full h-72 bg-gray-800 flex items-center justify-center rounded">
-              <span class="text-gray-500">No Image</span>
-            </div>
-          {% endif %}
+        <a href="{{ url_for('main.movie_detail', movie_id=movie.id) }}">
+          <div
+            class="bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg flex flex-col
+                   p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl"
+          >
+            {# Poster #}
+            {% if movie.poster %}
+              <img src="{{ movie.poster }}"
+                   alt="Poster of {{ movie.title }}"
+                   class="w-full h-auto max-h-72 object-contain rounded">
+            {% else %}
+              <div class="w-full h-72 bg-gray-800 flex items-center justify-center rounded">
+                <span class="text-gray-500">No Image</span>
+              </div>
+            {% endif %}
 
-          {# Title & Year Footer #}
-          <div class="p-2 text-center">
-            <p class="text-white font-semibold truncate">{{ movie.title }}</p>
-            <p class="text-gray-200 text-sm">{{ movie.year or '—' }}</p>
+            {# Title & Year Footer #}
+            <div class="p-2 text-center">
+              <p class="text-white font-semibold truncate">{{ movie.title }}</p>
+              <p class="text-gray-200 text-sm">{{ movie.year or '—' }}</p>
+            </div>
           </div>
-        </div>
+        </a>
       {% endfor %}
     </div>
   {% endif %}
