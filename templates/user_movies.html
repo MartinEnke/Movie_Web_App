@@ -4,17 +4,18 @@
 
 {% block content %}
   <h2 class="text-3xl font-semibold mb-4 text-center text-white">
-  <a href="{{ url_for('main.user_movies', user_id=user.id) }}"
-     class="hover:underline">
-    {{ user.name }}’s Favorite Movies
-  </a>
-</h2>
+    <a href="{{ url_for('main.user_movies', user_id=user.id) }}" class="hover:underline">
+      {{ user.name }}’s Favorite Movies
+    </a>
+  </h2>
 
   {# — Search Form — #}
   <form method="get"
         action="{{ url_for('main.user_movies', user_id=user.id) }}"
         class="mb-6 flex space-x-2">
-    <input type="text" name="q" value="{{ query }}"
+    <input type="text"
+           name="q"
+           value="{{ query }}"
            placeholder="Search catalog…"
            class="flex-1 px-3 py-2 rounded bg-white bg-opacity-20 text-white placeholder-gray-300 focus:bg-opacity-40">
     <button type="submit"
@@ -28,14 +29,16 @@
       Results for “{{ query }}”
     </h3>
 
-    {# New matches #}
+    {# --- New matches (can +Add) --- #}
     {% if new_results %}
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-8">
         {% for m in new_results %}
-          <div
-            class="bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg flex flex-col
-                   p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl relative group"
-          >
+          <div class="group relative bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg
+                      flex flex-col p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl">
+            {# full-card link overlay #}
+            <a href="{{ url_for('main.movie_detail', movie_id=m.id) }}"
+               class="absolute inset-0 z-10"></a>
+
             {% if m.poster %}
               <img src="{{ m.poster }}" alt="{{ m.title }}"
                    class="w-full h-auto max-h-72 object-contain rounded">
@@ -52,11 +55,10 @@
 
             <form method="post"
                   action="{{ url_for('main.add_existing_movie', user_id=user.id, movie_id=m.id) }}"
-                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
               <input type="hidden" name="q" value="{{ query }}">
               <button type="submit"
-                      class="px-2 py-1 rounded bg-black bg-opacity-70 text-white
-                             hover:bg-opacity-30">
+                      class="px-2 py-1 rounded bg-black bg-opacity-70 text-white hover:bg-opacity-30">
                 + Add
               </button>
             </form>
@@ -65,15 +67,17 @@
       </div>
     {% endif %}
 
-    {# Already owned #}
+    {# --- Already owned (read-only) --- #}
     {% if owned_results %}
       <h4 class="text-xl font-semibold mb-4 text-gray-300">Already in your list</h4>
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-8">
         {% for m in owned_results %}
-          <div
-            class="bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg flex flex-col
-                   p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl relative group"
-          >
+          <div class="group relative bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg
+                      flex flex-col p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl">
+            {# full-card link overlay #}
+            <a href="{{ url_for('main.movie_detail', movie_id=m.id) }}"
+               class="absolute inset-0 z-10"></a>
+
             {% if m.poster %}
               <img src="{{ m.poster }}" alt="{{ m.title }}"
                    class="w-full h-auto max-h-72 object-contain rounded">
@@ -90,7 +94,7 @@
 
             <span
               class="absolute top-2 right-2 px-2 py-1 rounded bg-black bg-opacity-70 text-white
-                     opacity-0 group-hover:opacity-100 transition-opacity">
+                     opacity-0 group-hover:opacity-100 transition-opacity z-20">
               In list
             </span>
           </div>
@@ -103,16 +107,18 @@
     {% endif %}
   {% endif %}
 
-  {# — The user’s saved list — #}
+  {# — Your saved list — #}
   <h3 class="text-2xl font-semibold mb-6 text-white">Your List</h3>
 
   {% if movies %}
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
       {% for m in movies %}
-        <div
-          class="bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg flex flex-col
-                 p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl relative group"
-        >
+        <div class="group relative bg-white bg-opacity-20 backdrop-blur-md rounded-lg shadow-lg
+                    flex flex-col p-1 transition duration-200 hover:bg-opacity-30 hover:shadow-xl">
+          {# full-card link overlay #}
+          <a href="{{ url_for('main.movie_detail', movie_id=m.id) }}"
+             class="absolute inset-0 z-10"></a>
+
           {% if m.poster %}
             <img src="{{ m.poster }}" alt="{{ m.title }}"
                  class="w-full h-auto max-h-72 object-contain rounded">
@@ -129,10 +135,9 @@
 
           <form method="post"
                 action="{{ url_for('main.remove_movie', user_id=user.id, movie_id=m.id) }}"
-                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
             <button type="submit"
-                    class="px-2 py-1 rounded bg-black bg-opacity-70 text-white
-                           hover:bg-opacity-30">
+                    class="px-2 py-1 rounded bg-black bg-opacity-70 text-white hover:bg-opacity-30">
               Remove
             </button>
           </form>
