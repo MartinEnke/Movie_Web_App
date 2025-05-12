@@ -46,6 +46,7 @@ class SQLiteDataManager(DataManagerInterface):
             self.db.session.commit()
 
     def add_review(self, movie_id: int, review_text: str, rating: float):
+        """Ad a movie review"""
         rv = Review(
             movie_id    = movie_id,
             review_text = review_text,

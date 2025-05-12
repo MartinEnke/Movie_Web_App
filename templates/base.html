@@ -27,96 +27,96 @@
 </head>
 <body class="m-0 text-white bg-gray-900">
   <nav x-data="{ open: false }"
-     class="header-fade text-gray-100 p-4 backdrop-blur-md fixed inset-x-0 top-0 z-20">
-  <div class="container mx-auto flex items-center justify-between">
+       class="header-fade text-gray-100 p-4 backdrop-blur-md fixed inset-x-0 top-0 z-20">
+    <div class="container mx-auto flex items-center justify-between">
 
-    <!-- Logo -->
-    <a href="{{ url_for('main.index') }}"
-       class="text-3xl font-extrabold font-serif text-red-600 tracking-wide logo">
-      CineFlick
-    </a>
+      <!-- Logo -->
+      <a href="{{ url_for('main.index') }}"
+         class="text-3xl font-extrabold font-serif text-red-600 tracking-wide logo">
+        CineFlick
+      </a>
 
-    <!-- Genre dropdown -->
-    <div x-data="{ openGenre: false }" class="relative">
-      <button @click="openGenre = !openGenre"
-              class="px-3 py-1 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30">
-        {{ selected_genre or 'All Genres' }}
-        <svg class="inline h-4 w-4 ml-1" viewBox="0 0 20 20">
-          <path d="M5 7l5 5 5-5H5z" fill="currentColor"/>
+      <!-- Genre dropdown -->
+      <div x-data="{ openGenre: false }" class="relative">
+        <button @click="openGenre = !openGenre"
+                class="px-3 py-1 bg-white bg-opacity-20 text-white rounded hover:bg-opacity-30">
+          {{ selected_genre or 'All Genres' }}
+          <svg class="inline h-4 w-4 ml-1" viewBox="0 0 20 20">
+            <path d="M5 7l5 5 5-5H5z" fill="currentColor"/>
+          </svg>
+        </button>
+        <div x-show="openGenre"
+             @click.outside="openGenre = false"
+             class="absolute mt-2 w-48 bg-black bg-opacity-50 rounded shadow-lg z-20 overflow-auto max-h-64"
+             style="backdrop-filter: blur(8px);">
+          <a href="{{ url_for('main.index', genre='') }}"
+             class="block px-4 py-2 hover:bg-black {{ not selected_genre and 'font-bold' }}">
+            All Genres
+          </a>
+          {% for genre in genres %}
+            <a href="{{ url_for('main.index', genre=genre) }}"
+               class="block px-4 py-2 hover:bg-black {{ genre==selected_genre and 'font-bold' }}">
+              {{ genre }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Desktop: Search + User links -->
+      <div class="hidden sm:flex sm:items-center sm:space-x-4">
+
+        <!-- User management -->
+        <div class="flex space-x-4">
+          <a href="{{ url_for('main.list_users') }}" class="hover:underline">Users</a>
+          <a href="{{ url_for('main.add_user') }}"   class="hover:underline">Add User</a>
+        </div>
+        <!-- Global movie search -->
+        <form action="{{ url_for('main.index') }}" method="get" class="flex items-center">
+          <input type="search"
+                 name="q"
+                 placeholder="Search all movies…"
+                 value="{{ request.args.get('q','') }}"
+                 class="px-2 py-1 rounded bg-white bg-opacity-20 text-white placeholder-gray-300
+                        focus:bg-opacity-40 focus:outline-none transition"/>
+          <button type="submit"
+                  class="px-2 py-1 bg-accent rounded hover:bg-orange-600 ml-2">🔍</button>
+        </form>
+      </div>
+
+      <!-- Mobile hamburger -->
+      <button class="sm:hidden focus:outline-none" @click="open = !open">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-6 w-6 text-gray-100"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <div x-show="openGenre"
-           @click.outside="openGenre = false"
-           class="absolute mt-2 w-48 bg-black bg-opacity-50 rounded shadow-lg z-20 overflow-auto max-h-64"
-           style="backdrop-filter: blur(8px);">
-        <a href="{{ url_for('main.index', genre='') }}"
-           class="block px-4 py-2 hover:bg-black {{ not selected_genre and 'font-bold' }}">
-          All Genres
-        </a>
-        {% for genre in genres %}
-          <a href="{{ url_for('main.index', genre=genre) }}"
-             class="block px-4 py-2 hover:bg-black {{ genre==selected_genre and 'font-bold' }}">
-            {{ genre }}
-          </a>
-        {% endfor %}
-      </div>
+
     </div>
 
-    <!-- Desktop: Search + User links -->
-    <div class="hidden sm:flex sm:items-center sm:space-x-4">
+    <!-- Mobile menu -->
+    <div x-show="open" @click.outside="open = false" class="sm:hidden mt-2 space-y-2 px-4 pb-4">
 
-      <!-- User management -->
-      <div class="flex space-x-4">
-        <a href="{{ url_for('main.list_users') }}" class="hover:underline">Users</a>
-        <a href="{{ url_for('main.add_user') }}"   class="hover:underline">Add User</a>
-      </div>
-      <!-- Global movie search -->
+      <!-- User links -->
+      <a href="{{ url_for('main.list_users') }}" class="block hover:underline">Users</a>
+      <a href="{{ url_for('main.add_user') }}"   class="block hover:underline">Add User</a>
+      <!-- Global movie search (mobile) -->
       <form action="{{ url_for('main.index') }}" method="get" class="flex items-center">
         <input type="search"
                name="q"
                placeholder="Search all movies…"
                value="{{ request.args.get('q','') }}"
-               class="px-2 py-1 rounded bg-white bg-opacity-20 text-white placeholder-gray-300
+               class="flex-1 px-2 py-1 rounded bg-white bg-opacity-20 text-white placeholder-gray-300
                       focus:bg-opacity-40 focus:outline-none transition"/>
         <button type="submit"
                 class="px-2 py-1 bg-accent rounded hover:bg-orange-600 ml-2">🔍</button>
       </form>
     </div>
 
-    <!-- Mobile hamburger -->
-    <button class="sm:hidden focus:outline-none" @click="open = !open">
-  <svg xmlns="http://www.w3.org/2000/svg"
-       class="h-6 w-6 text-gray-100"
-       fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M4 6h16M4 12h16M4 18h16" />
-  </svg>
-</button>
-
-  </div>
-
-  <!-- Mobile menu -->
-  <div x-show="open" @click.outside="open = false" class="sm:hidden mt-2 space-y-2 px-4 pb-4">
-
-    <!-- User links -->
-    <a href="{{ url_for('main.list_users') }}" class="block hover:underline">Users</a>
-    <a href="{{ url_for('main.add_user') }}"   class="block hover:underline">Add User</a>
-    <!-- Global movie search (mobile) -->
-    <form action="{{ url_for('main.index') }}" method="get" class="flex items-center">
-      <input type="search"
-             name="q"
-             placeholder="Search all movies…"
-             value="{{ request.args.get('q','') }}"
-             class="flex-1 px-2 py-1 rounded bg-white bg-opacity-20 text-white placeholder-gray-300
-                    focus:bg-opacity-40 focus:outline-none transition"/>
-      <button type="submit"
-              class="px-2 py-1 bg-accent rounded hover:bg-orange-600 ml-2">🔍</button>
-    </form>
-  </div>
-
-</nav>
+  </nav>
 
 
 
