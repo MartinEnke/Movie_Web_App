@@ -55,7 +55,8 @@ def fetch_movie_data(title):
         "rating":   rating,
         "poster":   data.get("Poster", "").strip(),
         "director": data.get("Director", "").strip(),
-        "genre": genre
+        "genre": genre,
+        "plot": data.get("Plot", "No description available.")
     }
 
 fetch_movie_data("Snatch")

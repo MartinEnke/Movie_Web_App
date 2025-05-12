@@ -4,8 +4,11 @@
 
 {% block content %}
   <h2 class="text-3xl font-semibold mb-4 text-center text-white">
+  <a href="{{ url_for('main.user_movies', user_id=user.id) }}"
+     class="hover:underline">
     {{ user.name }}’s Favorite Movies
-  </h2>
+  </a>
+</h2>
 
   {# — Search Form — #}
   <form method="get"

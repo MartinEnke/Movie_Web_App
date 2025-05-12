@@ -29,6 +29,7 @@ class Movie(db.Model):
     rating   = db.Column(db.Float)
     poster   = db.Column(db.String(255))
     genre    = db.Column(db.String(120))   # new: genre list, comma‑separated
+    plot     = db.Column(db.Text, nullable=True)
 
     users = db.relationship('User', secondary=user_movies, back_populates='movies')
     reviews = db.relationship('Review', back_populates='movie', cascade="all, delete-orphan")

@@ -22,32 +22,65 @@ def internal_error(e):
 
 @main.route('/')
 def index():
-    # grab optional ?genre=Comedy
-    selected_genre = request.args.get('genre', type=str)
+    q = request.args.get('q', '').strip()
+    sel_genre = request.args.get('genre', '').strip()
 
+    # Start with base query
+    qry = Movie.query
+
+    # 1) Free-text search on title OR director
+    if q:
+        ilike_pattern = f"%{q}%"
+        qry = qry.filter(
+            or_(
+                Movie.title.ilike(ilike_pattern),
+                Movie.director.ilike(ilike_pattern)
+            )
+        )
+
+    # 2) Genre filter (comma-separated in your `genre` column)
+    if sel_genre:
+        qry = qry.filter(Movie.genre.ilike(f"%{sel_genre}%"))
+
+    # 3) Execute
     try:
-        # fetch all movies, optionally filtered by genre substring
-        if selected_genre:
-            # simple “contains” match; your genre field is a comma-separated string
-            movies = Movie.query.filter(Movie.genre.ilike(f"%{selected_genre}%")).all()
-        else:
-            movies = Movie.query.all()
+        movies = qry.all()
     except SQLAlchemyError:
         current_app.logger.exception("DB error on index")
         abort(500)
 
-    # also collect all distinct genres for the dropdown
-    all_genres = set()
-    for m in Movie.query.with_entities(Movie.genre).filter(Movie.genre.isnot(None)):
-        for g in m.genre.split(','):
-            all_genres.add(g.strip())
-    sorted_genres = sorted(all_genres)
+    # Flash messages
+    if not movies:
+        if q or sel_genre:
+            flash(f'No matches for '
+                  f'{("“" + q + "” ") if q else ""}'
+                  f'{("in genre “" + sel_genre + "”") if sel_genre else ""}',
+                  "warning")
+        else:
+            flash("No movies yet—why not seed the catalog?", "info")
+
+    # 4) Gather distinct genres for dropdown
+    all_genres = (
+        Movie.query
+             .with_entities(Movie.genre)
+             .filter(Movie.genre.isnot(None))
+             .all()
+    )
+    # flatten and split comma lists, dedupe & sort:
+    genre_set = {
+        g.strip()
+        for (row,) in all_genres
+        for g in row.split(',')
+        if g.strip()
+    }
+    genres = sorted(genre_set)
 
     return render_template(
-      'index.html',
-      movies=movies,
-      genres=sorted_genres,
-      selected_genre=selected_genre
+        'index.html',
+        movies=movies,
+        query=q,
+        selected_genre=sel_genre,
+        genres=genres
     )
 
 
@@ -207,7 +240,8 @@ def add_movie(user_id):
             year=year,  # use parsed year
             rating=float(data["rating"]) if data.get("rating") else None,
             poster=data["poster"],
-            genre=genre
+            genre=genre,
+            plot=data.get("plot")
         )
 
 
