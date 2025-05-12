@@ -2,17 +2,28 @@
 {% block title %}All Users – Cienesis{% endblock %}
 
 {% block content %}
-  <!-- Center the heading -->
   <h1 class="text-2xl font-semibold mb-4 text-center">All Users</h1>
 
   <div class="space-y-3">
     {% for user in users %}
-      <a href="{{ url_for('main.user_movies', user_id=user.id) }}"
-         class="flex items-center justify-center
-                bg-white bg-opacity-30 text-white p-4 rounded-lg
-                transition hover:bg-opacity-50">
-        {{ user.name }}
-      </a>
+      <div class="flex items-center justify-between
+                  bg-white bg-opacity-30 text-white p-4 rounded-lg
+                  transition hover:bg-opacity-50">
+        <a href="{{ url_for('main.user_movies', user_id=user.id) }}"
+           class="flex-1">
+          {{ user.name }}
+        </a>
+        <form method="post"
+              action="{{ url_for('main.delete_user', user_id=user.id) }}">
+          <button
+            type="submit"
+            onclick="return confirm('Delete user & all their data?');"
+            class="ml-4 text-red-400 hover:text-red-600 font-bold">
+            &times;
+          </button>
+        </form>
+      </div>
     {% endfor %}
   </div>
 {% endblock %}
+
