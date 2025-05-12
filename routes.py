@@ -311,3 +311,26 @@ def search():
         users=users,
         movies=movies
     )
+
+@main.route('/movies/<int:movie_id>', methods=['GET','POST'])
+def movie_detail(movie_id):
+    movie = Movie.query.get_or_404(movie_id)
+    reviews = current_app.data_manager.get_movie_reviews(movie_id)
+
+    if request.method == 'POST':
+        text   = request.form['review_text']
+        rating = float(request.form['rating'])
+        try:
+            current_app.data_manager.add_review(movie_id=movie_id,
+                                                review_text=text,
+                                                rating=rating)
+            flash("Review added!", "success")
+            return redirect(url_for('main.movie_detail', movie_id=movie_id))
+        except Exception as e:
+            # Log the real error
+            current_app.logger.exception("Failed to save review")
+            flash(f"Could not save your review—please try again. ({e.__class__.__name__})", "error")
+
+    return render_template('movie_detail.html',
+                           movie=movie,
+                           reviews=reviews)

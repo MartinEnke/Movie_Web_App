@@ -16,9 +16,9 @@ class User(db.Model):
     name   = db.Column(db.String(80), unique=True, nullable=False)
 
     # Many-to-many to Movie
-    movies = db.relationship('Movie',
-                             secondary=user_movies,
-                             back_populates='users')
+    movies = db.relationship('Movie', secondary=user_movies, back_populates='users')
+    reviews = db.relationship('Review', back_populates='user', cascade="all, delete-orphan")
+
 
 class Movie(db.Model):
     __tablename__ = 'movies'
@@ -30,10 +30,24 @@ class Movie(db.Model):
     poster   = db.Column(db.String(255))
     genre    = db.Column(db.String(120))   # new: genre list, comma‑separated
 
-    users = db.relationship('User',
-                            secondary=user_movies,
-                            back_populates='movies')
+    users = db.relationship('User', secondary=user_movies, back_populates='movies')
+    reviews = db.relationship('Review', back_populates='movie', cascade="all, delete-orphan")
 
     __table_args__ = (
         db.UniqueConstraint('title', 'year', name='uq_movie_title_year'),
     )
+
+
+class Review(db.Model):
+    __tablename__ = "reviews"
+
+    review_id   = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    movie_id    = db.Column(db.Integer, db.ForeignKey('movies.id'), nullable=False)
+    review_text = db.Column(db.Text, nullable=False)
+    rating      = db.Column(db.Float, nullable=False)
+    created_at  = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+    # relationships
+    user  = db.relationship('User', back_populates='reviews')
+    movie = db.relationship('Movie', back_populates='reviews')

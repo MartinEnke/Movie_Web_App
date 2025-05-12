@@ -1,5 +1,6 @@
 from Movie_Web_App.data_manager.data_manager_interface import DataManagerInterface
-from Movie_Web_App.data_manager.models import Movie, User
+from Movie_Web_App.data_manager.models import Movie, User, Review
+from typing import List
 
 class SQLiteDataManager(DataManagerInterface):
     def __init__(self, db):
@@ -43,3 +44,21 @@ class SQLiteDataManager(DataManagerInterface):
         if movie:
             self.db.session.delete(movie)
             self.db.session.commit()
+
+    def add_review(self, movie_id: int, review_text: str, rating: float):
+        rv = Review(
+            movie_id    = movie_id,
+            review_text = review_text,
+            rating      = rating
+            # user_id is nullable, so you can leave it out for anonymous
+        )
+        self.db.session.add(rv)
+        self.db.session.commit()
+        return rv
+
+    def get_movie_reviews(self, movie_id: int) -> List[Review]:
+        return Review.query.filter_by(movie_id=movie_id).order_by(Review.created_at.desc()).all()
+
+    def get_user_reviews(self, user_id: int) -> List[Review]:
+        return Review.query.filter_by(user_id=user_id).order_by(Review.created_at.desc()).all()
+
