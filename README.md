@@ -128,45 +128,46 @@ Tests cover routing, edge cases (OMDb errors, duplicates), and DB operations.**
    - Sign up / Log in (e.g. Flask-Login) so users manage their own lists.  
    - OAuth integration (Google, GitHub) for one-click access.
 
-2. **Social & Sharing**  
-   - Follow other users & browse their public lists.  
-   - Shareable list URLs or “public profile” pages.  
-   - Avatars/Gravatars and social-login comments on reviews.
+2. **Packaging & Deployment**  
+   - Dockerized development and production images.  
+   - CI/CD pipeline (GitHub Actions) with automated tests, linting, and deploy.  
+   - Hosting options: Heroku, AWS, GCP, or self-hosted.
+   
+3. **Integrating AI Features**
+   - Movie Recommendation: based on the users favorite movies (also possible without AI).
+   - Movie Trivia: trivia question and answer game about movies to entertain users.
 
-3. **Rich Reviews & Ratings**  
-   - Star-rating widget (½-stars, dynamic bars) instead of raw numeric input.  
-   - Review moderation (flag inappropriate content).  
-   - Threaded replies under reviews for community discussion.
-
-4. **Watchlists & Tracking**  
-   - “To Watch” vs. “Watched” toggles, with watch-dates.  
-   - Personal stats: films watched per month, top directors, etc.  
-   - Progress bars for multi-part franchises or director filmographies.
-
-5. **Recommendations & Discovery**  
+4. **Recommendations & Discovery**  
    - “Similar movies” suggestions based on genre overlap or collaborative filtering.  
    - “People also watched…” section from aggregated user data.  
    - Trending / New releases feed pulled from an external API.
 
-6. **Advanced Search & Filters**  
+5. **Advanced Search & Filters**  
    - Multi-criteria search (combine director, year range, rating threshold).  
    - User-defined tags (e.g. “campy,” “arthouse,” “holiday watch”).  
    - Saved searches or “smart playlists” that auto-update.
+   
+6. **Social & Sharing**  
+   - Follow other users & browse their public lists.  
+   - Shareable list URLs or “public profile” pages.  
+   - Avatars/Gravatars and social-login comments on reviews.
 
 7. **Rich Media & Integrations**  
    - Embed trailers via the YouTube API on detail pages.  
    - Full-screen poster galleries with lightbox views.  
    - Mobile push notifications for new releases or friend activity.
 
-8. **Analytics & Dashboards**  
-   - Personal stats page: total films tracked, average rating, top genres.  
-   - Community leaderboards (most active users, highest-rated films).
+8. **Rich Reviews & Ratings**  
+   - Star-rating widget (½-stars, dynamic bars) instead of raw numeric input.  
+   - Review moderation (flag inappropriate content).  
+   - Threaded replies under reviews for community discussion.
 
 9. **Internationalization & Accessibility**  
    - Multi-language support with Flask-Babel.  
    - ARIA tags, high-contrast mode, and screen-reader–friendly layouts.
 
-10. **Packaging & Deployment**  
-   - Dockerized development and production images.  
-   - CI/CD pipeline (GitHub Actions) with automated tests, linting, and deploy.  
-   - Hosting options: Heroku, AWS, GCP, or self-hosted.
+10. **Analytics & Dashboards**  
+   - Personal stats page: total films tracked, average rating, top genres.  
+   - Community leaderboards (most active users, highest-rated films).
+
+
