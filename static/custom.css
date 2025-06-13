@@ -35,6 +35,11 @@ body {
   background-size: cover;
 }
 
+form input,
+form textarea,
+form select {
+  color: black;
+}
 
 /* Example: style your footer */
 footer {

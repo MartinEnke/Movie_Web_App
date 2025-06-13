@@ -135,50 +135,107 @@ def list_users():
 def user_movies(user_id):
     """
     Display a user's movie list with optional catalog search.
+    Tries OMDb if no local movie matches are found.
     """
     user = User.query.get_or_404(user_id)
     q = request.args.get('q', '').strip()
     new_results, owned_results = [], []
+
     if q:
         catalog = Movie.query.filter(
             or_(Movie.title.ilike(f'%{q}%'), Movie.director.ilike(f'%{q}%'))
         ).all()
+
         owned_ids = {m.id for m in user.movies}
         for m in catalog:
             (owned_results if m.id in owned_ids else new_results).append(m)
+
+        # ✅ OMDb fallback if no DB matches
+        if not catalog:
+            try:
+                data = fetch_movie_data(q)
+                if data:
+                    movie = Movie(**data)
+                    db.session.add(movie)
+                    db.session.commit()
+                    new_results.append(movie)
+                    flash(f"Fetched “{movie.title}” from OMDb.", "info")
+                else:
+                    flash("No movie found via OMDb.", "warning")
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("OMDb error in user_movies")
+                flash("Could not fetch movie from OMDb.", "error")
+
     return render_template(
         'user_movies.html', user=user,
         movies=user.movies, query=q,
         new_results=new_results, owned_results=owned_results
     )
 
-@main.route('/users/<int:user_id>/add_existing/<int:movie_id>', methods=['POST'])
+
+@main.route('/users/<int:user_id>/add_existing/<movie_id>', methods=['POST'])
 def add_existing_movie(user_id, movie_id):
     """
-    Add an existing movie from catalog to user's list.
+    Add a movie to a user's list. If movie_id is numeric, use local DB;
+    if not, treat as title and fetch from OMDb if not in DB.
     """
     user = User.query.get_or_404(user_id)
-    movie = Movie.query.get_or_404(movie_id)
     q = request.form.get('q', '').strip()
-    if movie in user.movies:
-        flash(f"“{movie.title}” is already in your list.", "warning")
-    else:
-        user.movies.append(movie)
-        try:
+
+    try:
+        # Try interpreting as a local movie ID
+        movie_id_int = int(movie_id)
+        movie = Movie.query.get_or_404(movie_id_int)
+
+        if movie in user.movies:
+            flash(f"“{movie.title}” is already in your list.", "warning")
+        else:
+            user.movies.append(movie)
             db.session.commit()
             flash(f"Added “{movie.title}” to your list!", "success")
-        except SQLAlchemyError:
-            db.session.rollback()
-            current_app.logger.exception("DB error attaching movie")
-            flash("Could not add movie. Try again.", "error")
-    # Redirect preserving search if matches remain
+
+    except ValueError:
+        # Not an int? Treat as title and try to find it locally
+        title = movie_id.strip()
+        movie = Movie.query.filter(Movie.title.ilike(title)).first()
+
+        if movie and movie in user.movies:
+            flash(f"“{movie.title}” is already in your list.", "warning")
+        else:
+            # Fetch from OMDb if not found
+            if not movie:
+                try:
+                    data = fetch_movie_data(title)
+                    if not data:
+                        flash("Movie not found via OMDb.", "warning")
+                        return redirect(url_for('main.user_movies', user_id=user_id, q=q))
+                    movie = Movie(**data)
+                    db.session.add(movie)
+                except Exception:
+                    db.session.rollback()
+                    current_app.logger.exception("OMDb or DB error")
+                    flash("Could not fetch movie.", "error")
+                    return redirect(url_for('main.user_movies', user_id=user_id, q=q))
+
+            user.movies.append(movie)
+            try:
+                db.session.commit()
+                flash(f"Added “{movie.title}” to your list (via OMDb)!", "success")
+            except SQLAlchemyError:
+                db.session.rollback()
+                flash("Could not save movie.", "error")
+
+    # Redirect preserving search if needed
     if q:
         remaining = [m for m in Movie.query.filter(
             or_(Movie.title.ilike(f'%{q}%'), Movie.director.ilike(f'%{q}%'))
         ).all() if m.id not in {mv.id for mv in user.movies}]
         if remaining:
             return redirect(url_for('main.user_movies', user_id=user_id, q=q))
+
     return redirect(url_for('main.user_movies', user_id=user_id))
+
 
 @main.route('/users/<int:user_id>/add_movie', methods=['GET', 'POST'])
 def add_movie(user_id):
@@ -211,6 +268,28 @@ def add_movie(user_id):
                     flash("Error saving movie.", "error")
     return render_template('add_movie.html', user_id=user_id)
 
+
+@main.route('/users/<int:user_id>/update_movie/<int:movie_id>', methods=['GET', 'POST'])
+def update_movie(user_id, movie_id):
+    """
+    Edit a movie's details.
+    """
+    movie = Movie.query.get_or_404(movie_id)
+    user = User.query.get_or_404(user_id)
+
+    if request.method == 'POST':
+        movie.title = request.form['name'].strip()
+        movie.director = request.form['director'].strip()
+        movie.year = request.form['year'].strip()
+        movie.rating = request.form['rating'].strip()
+        db.session.commit()
+
+        flash("Movie updated successfully.", "success")
+        return redirect(url_for('main.user_movies', user_id=user_id))
+
+    return render_template('update_movie.html', movie=movie, user=user)
+
+
 @main.route('/users/<int:user_id>/remove_movie/<int:movie_id>', methods=['POST'])
 def remove_movie(user_id, movie_id):
     """
@@ -234,19 +313,44 @@ def remove_movie(user_id, movie_id):
 def search():
     """
     Global search for users and movies by name or title/director.
+    If no movie is found locally, try fetching from OMDb.
     """
     q = request.args.get('q', '').strip()
     if not q:
         return render_template('search_results.html', query=q, users=[], movies=[])
+
     try:
+        # Search local DB
         users = User.query.filter(User.name.ilike(f"%{q}%")).all()
         movies = Movie.query.filter(
             or_(Movie.title.ilike(f"%{q}%"), Movie.director.ilike(f"%{q}%"))
         ).all()
+
+        # If no local movie found, try OMDb fetch
+        if not movies:
+            try:
+                data = fetch_movie_data(q)
+                if data:
+                    movie = Movie(**data)
+                    db.session.add(movie)
+                    db.session.commit()
+                    movies = [movie]
+                    flash(f"Fetched “{movie.title}” from OMDb.", "info")
+                else:
+                    flash("No movies found matching your search.", "warning")
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("OMDb error during search")
+                flash("Could not reach OMDb for movie search.", "error")
+
     except SQLAlchemyError:
         current_app.logger.exception("DB error during search")
         users = movies = []
+        flash("An error occurred while searching.", "error")
+
     return render_template('search_results.html', query=q, users=users, movies=movies)
+
+
 
 @main.route('/movies/<int:movie_id>', methods=['GET', 'POST'])
 def movie_detail(movie_id):
